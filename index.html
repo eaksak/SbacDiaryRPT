@@ -99,7 +99,6 @@
             overflow-x: hidden;
         }
 
-        /* Subtle grid background */
         body::before {
             content: '';
             position: fixed;
@@ -111,7 +110,6 @@
             z-index: 0;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(99,115,146,0.25); border-radius: 3px; }
@@ -130,7 +128,6 @@
             min-height: 100vh;
         }
 
-        /* --- Sidebar --- */
         .sidebar {
             width: 260px;
             background: var(--color-surface);
@@ -211,7 +208,6 @@
             color: var(--color-text-muted);
         }
 
-        /* --- Main Content --- */
         .main-content {
             flex: 1;
             margin-left: 260px;
@@ -219,7 +215,6 @@
             flex-direction: column;
         }
 
-        /* Top Header Bar */
         .top-bar {
             height: 60px;
             background: var(--color-surface-glass);
@@ -255,14 +250,12 @@
         }
         .breadcrumb span { color: var(--color-text-secondary); }
 
-        /* Page Content */
         .page-content {
             flex: 1;
             padding: var(--space-xl);
             overflow-y: auto;
         }
 
-        /* --- Tab Panels --- */
         .tab-panel { display: none; animation: fadeSlideIn 0.35s var(--ease-smooth); }
         .tab-panel.active { display: block; }
 
@@ -271,9 +264,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ================================================================
-           CARDS & PANELS
-           ================================================================ */
         .card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -302,7 +292,6 @@
             color: var(--color-primary);
         }
 
-        /* Stats Row */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -367,9 +356,6 @@
         .stat-card.expense .stat-value { color: var(--color-expense); }
         .stat-card.net .stat-value { color: var(--color-primary); }
 
-        /* ================================================================
-           FORM ELEMENTS
-           ================================================================ */
         .form-group {
             margin-bottom: var(--space-md);
         }
@@ -413,9 +399,6 @@
             box-shadow: 0 0 0 3px var(--color-expense-glow);
         }
 
-        /* ================================================================
-           BUTTONS
-           ================================================================ */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -468,9 +451,6 @@
             border-radius: var(--radius-sm);
         }
 
-        /* ================================================================
-           DATA ENTRY TABLE
-           ================================================================ */
         .report-table-wrapper {
             overflow-x: auto;
             border-radius: var(--radius-md);
@@ -579,9 +559,6 @@
         .col-dj-exp { width: 11%; }
         .col-note { width: 26%; }
 
-        /* ================================================================
-           RECONCILIATION & SYNC INDICATOR
-           ================================================================ */
         .reconcile-status {
             display: inline-flex;
             align-items: center;
@@ -629,9 +606,6 @@
             color: var(--color-text-muted);
         }
 
-        /* ================================================================
-           REPORT HEADER
-           ================================================================ */
         .diary-report-header {
             text-align: center;
             margin-bottom: var(--space-lg);
@@ -658,9 +632,6 @@
             font-weight: 500;
         }
 
-        /* ================================================================
-           HISTORY TABLE
-           ================================================================ */
         .history-table {
             width: 100%;
             border-collapse: collapse;
@@ -686,9 +657,6 @@
         }
         .history-table .currency { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 
-        /* ================================================================
-           DATE CONTROL BAR
-           ================================================================ */
         .date-control-bar {
             display: flex;
             align-items: center;
@@ -703,7 +671,6 @@
             max-width: 200px;
         }
 
-        /* Dynamic debtors */
         .debtor-row-actions { display: flex; gap: 4px; }
         .btn-add-debtor, .btn-remove-debtor {
             width: 28px;
@@ -722,7 +689,6 @@
         .btn-remove-debtor { background: var(--color-expense-bg); color: var(--color-expense); }
         .btn-remove-debtor:hover { background: var(--color-expense); color: white; }
 
-        /* Signature */
         .signature-section {
             display: flex;
             justify-content: center;
@@ -741,7 +707,6 @@
         .signature-label { font-size: 0.78rem; color: var(--color-text-muted); }
         .signature-date { font-size: 0.7rem; color: var(--color-text-muted); margin-top: var(--space-xs); }
 
-        /* Toast */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -870,7 +835,10 @@
             <div id="sidebar-cloud-status" class="cloud-badge disconnected mb-xs" style="width:100%; justify-content:center;">
                 <i class="fas fa-database"></i> Local Storage Only
             </div>
-            <span style="font-size:0.65rem;">Version 1.5 — Google Sheets Ready</span>
+            <a id="sidebar-sheet-link" class="btn btn-ghost btn-sm hidden mt-xs" target="_blank" href="#" style="width:100%; justify-content:center; border-color: rgba(66, 133, 244, 0.4); color: #63b3ed; font-size:0.72rem;">
+                <i class="fab fa-google-drive"></i> เปิด Google Sheet
+            </a>
+            <span style="font-size:0.65rem; margin-top:4px; display:block; text-align:center;">Version 1.6 — Google Sheets Direct</span>
         </div>
     </aside>
 
@@ -889,6 +857,9 @@
                 </div>
             </div>
             <div class="top-bar-right">
+                <a id="topbar-sheet-link" class="btn btn-ghost btn-sm hidden" target="_blank" href="#" style="border-color: rgba(66, 133, 244, 0.4); color: #63b3ed;">
+                    <i class="fab fa-google-drive"></i> เปิด Google Sheet
+                </a>
                 <button class="btn btn-ghost btn-sm" onclick="exportPDF()">
                     <i class="fas fa-print"></i> พิมพ์ / PDF
                 </button>
@@ -1106,6 +1077,13 @@
                     </div>
                     <div id="gas-status-message"></div>
 
+                    <!-- Direct Link to Google Sheet -->
+                    <div id="settings-sheet-container" class="mt-md hidden">
+                        <a id="settings-sheet-link" class="btn btn-ghost btn-sm" target="_blank" href="#" style="border-color: #4285F4; color: #63b3ed; background: rgba(66,133,244,0.08);">
+                            <i class="fab fa-google-drive" style="color: #4285F4;"></i> 📊 คลิกที่นี่เพื่อเปิด Google Spreadsheet (Master Database)
+                        </a>
+                    </div>
+
                     <details style="margin-top:16px; font-size:0.82rem; color:var(--color-text-muted);">
                         <summary style="cursor:pointer; color:var(--color-primary); font-weight:600;">📖 ขั้นตอนการติดตั้ง Google Apps Script (คลิกเพื่อดู)</summary>
                         <ol style="margin-left:20px; margin-top:8px; line-height:1.8;">
@@ -1152,6 +1130,7 @@
 const STORAGE_KEY = 'sbac_diary_reports';
 const CATEGORIES_KEY = 'sbac_diary_categories';
 const GAS_URL_KEY = 'sbac_diary_gas_url';
+const SHEET_URL_KEY = 'sbac_diary_sheet_url';
 
 // Default categories
 const DEFAULT_CATEGORIES = {
@@ -1196,6 +1175,7 @@ let allReports = loadAllReports();
 let currentDebtors = [];
 let charts = {};
 let gasUrl = localStorage.getItem(GAS_URL_KEY) || '';
+let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || '';
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {
@@ -1212,6 +1192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('gas-url-input').value = gasUrl;
     }
     updateCloudStatusBadge();
+    updateSheetButtons(sheetUrl);
 
     buildEntryTable();
     loadReportForDate(today);
@@ -1566,11 +1547,9 @@ async function saveReport() {
         });
     });
 
-    // 1. Always save to local storage cache
     allReports[reportDate] = report;
     saveAllReports();
 
-    // 2. If Google Sheets URL configured, sync to Cloud
     if (gasUrl) {
         showToast('กำลังบันทึกลง Google Sheets...', 'info');
         try {
@@ -1581,6 +1560,7 @@ async function saveReport() {
             });
             const result = await res.json();
             if (result.status === 'success') {
+                if (result.spreadsheetUrl) updateSheetButtons(result.spreadsheetUrl);
                 showToast(`✅ บันทึกลง Google Sheets และ เครื่อง เรียบร้อย (${formatThaiDate(reportDate)})`, 'success');
             } else {
                 showToast('บันทึกลงเครื่องแล้ว แต่วอนคำขอ Google Sheets: ' + result.message, 'error');
@@ -1594,18 +1574,16 @@ async function saveReport() {
 }
 
 async function loadReportForDate(dateStr) {
-    // Check if we have gasUrl and fetch cloud version
     if (gasUrl) {
         try {
             const res = await fetch(`${gasUrl}?action=getReport&date=${dateStr}`);
             const result = await res.json();
             if (result.status === 'success' && result.data) {
+                if (result.spreadsheetUrl) updateSheetButtons(result.spreadsheetUrl);
                 allReports[dateStr] = result.data;
                 saveAllReports();
             }
-        } catch (err) {
-            // fall back to local
-        }
+        } catch (err) {}
     }
 
     const report = allReports[dateStr];
@@ -1657,7 +1635,7 @@ function onDateChange() {
     loadReportForDate(dateStr);
 }
 
-// REPORT VIEW (Read-only)
+// REPORT VIEW
 function loadReportView() {
     const dateStr = document.getElementById('view-report-date').value;
     const report = allReports[dateStr];
@@ -2105,6 +2083,7 @@ function saveGasUrl() {
         showToast('บันทึก Web App URL แล้ว กำลังทดสอบ...', 'info');
         testGasConnection();
     } else {
+        updateSheetButtons('');
         showToast('ลบการเชื่อมต่อ Google Sheets แล้ว (สลับเป็น Local Storage)', 'info');
     }
 }
@@ -2122,6 +2101,9 @@ async function testGasConnection() {
         const res = await fetch(`${gasUrl}?action=ping`);
         const data = await res.json();
         if (data.status === 'success') {
+            if (data.spreadsheetUrl) {
+                updateSheetButtons(data.spreadsheetUrl);
+            }
             statusDiv.innerHTML = `<span style="color:var(--color-success); font-weight:600;"><i class="fas fa-circle-check"></i> เชื่อมต่อ Google Sheets สำเร็จ! (${data.message})</span>`;
             showToast('เชื่อมต่อ Google Sheets สำเร็จ!', 'success');
             syncFromCloud();
@@ -2139,6 +2121,9 @@ async function syncFromCloud() {
         const res = await fetch(`${gasUrl}?action=listReports`);
         const result = await res.json();
         if (result.status === 'success' && Array.isArray(result.data)) {
+            if (result.spreadsheetUrl) {
+                updateSheetButtons(result.spreadsheetUrl);
+            }
             for (const item of result.data) {
                 const detailRes = await fetch(`${gasUrl}?action=getReport&date=${item.date}`);
                 const detailData = await detailRes.json();
@@ -2162,6 +2147,25 @@ function updateCloudStatusBadge() {
     } else {
         badge.className = 'cloud-badge disconnected mb-xs';
         badge.innerHTML = `<i class="fas fa-database"></i> Local Storage Only`;
+    }
+}
+
+function updateSheetButtons(url) {
+    if (url) {
+        sheetUrl = url;
+        localStorage.setItem(SHEET_URL_KEY, url);
+
+        const sidebarLink = document.getElementById('sidebar-sheet-link');
+        const topbarLink = document.getElementById('topbar-sheet-link');
+        const settingsContainer = document.getElementById('settings-sheet-container');
+        const settingsLink = document.getElementById('settings-sheet-link');
+
+        if (sidebarLink) { sidebarLink.href = url; sidebarLink.classList.remove('hidden'); }
+        if (topbarLink) { topbarLink.href = url; topbarLink.classList.remove('hidden'); }
+        if (settingsContainer && settingsLink) {
+            settingsLink.href = url;
+            settingsContainer.classList.remove('hidden');
+        }
     }
 }
 

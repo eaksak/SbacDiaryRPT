@@ -43,7 +43,7 @@ var SHEET_CONFIG           = "Config";
  *   ?action=listReports                      → List all report headers
  *   ?action=queryReports&from=...&to=...     → Query reports in date range
  *   ?action=getConfig                        → Get categories/settings
- *   ?action=ping                             → Health check
+ *   ?action=ping                             → Health check & return Sheet URL
  *   (default)                                → List all reports
  */
 function doGet(e) {
@@ -52,35 +52,41 @@ function doGet(e) {
 
   try {
     ensureSheetsExist();
+    var ssUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
 
     switch (action) {
       case "ping":
-        response = { status: "success", message: "บธว. Diary API is ready.", timestamp: new Date().toISOString() };
+        response = { 
+          status: "success", 
+          message: "บธว. Diary API is ready.", 
+          spreadsheetUrl: ssUrl,
+          timestamp: new Date().toISOString() 
+        };
         break;
 
       case "getReport":
         var date = e.parameter.date;
         if (!date) throw new Error("Missing 'date' parameter.");
-        response = { status: "success", data: getReportByDate(date) };
+        response = { status: "success", data: getReportByDate(date), spreadsheetUrl: ssUrl };
         break;
 
       case "listReports":
-        response = { status: "success", data: listAllReports() };
+        response = { status: "success", data: listAllReports(), spreadsheetUrl: ssUrl };
         break;
 
       case "queryReports":
         var from = e.parameter.from || "";
         var to   = e.parameter.to   || "";
         var unit = e.parameter.unit || "ALL";
-        response = { status: "success", data: queryReports(from, to, unit) };
+        response = { status: "success", data: queryReports(from, to, unit), spreadsheetUrl: ssUrl };
         break;
 
       case "getConfig":
-        response = { status: "success", data: getConfig() };
+        response = { status: "success", data: getConfig(), spreadsheetUrl: ssUrl };
         break;
 
       default:
-        response = { status: "success", data: listAllReports() };
+        response = { status: "success", data: listAllReports(), spreadsheetUrl: ssUrl };
     }
   } catch (err) {
     response = { status: "error", message: err.toString() };
@@ -103,23 +109,24 @@ function doPost(e) {
 
   try {
     ensureSheetsExist();
+    var ssUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
     var postData = JSON.parse(e.postData.contents);
     var action = postData.action;
 
     switch (action) {
       case "saveReport":
         var result = saveReport(postData.report);
-        response = { status: "success", message: result.message, date: result.date };
+        response = { status: "success", message: result.message, date: result.date, spreadsheetUrl: ssUrl };
         break;
 
       case "deleteReport":
         deleteReport(postData.date);
-        response = { status: "success", message: "ลบรายงานวันที่ " + postData.date + " เรียบร้อย" };
+        response = { status: "success", message: "ลบรายงานวันที่ " + postData.date + " เรียบร้อย", spreadsheetUrl: ssUrl };
         break;
 
       case "saveConfig":
         saveConfig(postData.config);
-        response = { status: "success", message: "บันทึกการตั้งค่าเรียบร้อย" };
+        response = { status: "success", message: "บันทึกการตั้งค่าเรียบร้อย", spreadsheetUrl: ssUrl };
         break;
 
       default:
@@ -140,7 +147,6 @@ function doPost(e) {
 function ensureSheetsExist() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // DailyReports
   if (!ss.getSheetByName(SHEET_DAILY_REPORTS)) {
     var s = ss.insertSheet(SHEET_DAILY_REPORTS);
     s.appendRow(["date", "status", "savedAt", "createdBy"]);
@@ -148,7 +154,6 @@ function ensureSheetsExist() {
     s.setFrozenRows(1);
   }
 
-  // ReportLines
   if (!ss.getSheetByName(SHEET_REPORT_LINES)) {
     var s = ss.insertSheet(SHEET_REPORT_LINES);
     s.appendRow(["date", "itemId", "group", "coopRev", "coopExp", "djRev", "djExp", "note"]);
@@ -156,7 +161,6 @@ function ensureSheetsExist() {
     s.setFrozenRows(1);
   }
 
-  // Debtors
   if (!ss.getSheetByName(SHEET_DEBTORS)) {
     var s = ss.insertSheet(SHEET_DEBTORS);
     s.appendRow(["date", "name", "coopRev", "coopExp"]);
@@ -164,7 +168,6 @@ function ensureSheetsExist() {
     s.setFrozenRows(1);
   }
 
-  // PaymentChannels
   if (!ss.getSheetByName(SHEET_PAYMENT_CHANNELS)) {
     var s = ss.insertSheet(SHEET_PAYMENT_CHANNELS);
     s.appendRow(["date", "channelId", "coopAmount", "djAmount"]);
@@ -172,7 +175,6 @@ function ensureSheetsExist() {
     s.setFrozenRows(1);
   }
 
-  // Config
   if (!ss.getSheetByName(SHEET_CONFIG)) {
     var s = ss.insertSheet(SHEET_CONFIG);
     s.appendRow(["key", "value"]);
@@ -185,32 +187,19 @@ function ensureSheetsExist() {
 // SAVE REPORT
 // ================================================================
 
-/**
- * Save or update a daily report.
- * 
- * Expected report structure:
- * {
- *   date: "2026-08-06",
- *   status: "DRAFT",
- *   data: { "REV_COOP_SALES_COOP_REV": 2176, ... },
- *   debtors: [ { name: "อ.เอก", coopRev: 100, coopExp: 0 }, ... ],
- *   payments: {}  // (payment data is inside `data` with PAY_ prefix)
- * }
- */
 function saveReport(report) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var date = report.date;
 
   if (!date) throw new Error("Missing report date.");
 
-  // --- 1. Update DailyReports header ---
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
   var existingRow = -1;
 
   for (var i = 1; i < headerData.length; i++) {
     if (String(headerData[i][0]).trim() === date) {
-      existingRow = i + 1; // 1-indexed
+      existingRow = i + 1;
       break;
     }
   }
@@ -223,13 +212,10 @@ function saveReport(report) {
     headerSheet.appendRow([date, report.status || "DRAFT", now, report.createdBy || ""]);
   }
 
-  // --- 2. Clear and rewrite ReportLines for this date ---
   clearRowsByDate(SHEET_REPORT_LINES, date);
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
   var data = report.data || {};
 
-  // Parse the flat data map into structured rows
-  // Keys follow patterns like: ITEM_ID_COOP_REV, ITEM_ID_COOP_EXP, ITEM_ID_DJ_REV, ITEM_ID_DJ_EXP
   var lineItems = {};
   var paymentItems = {};
 
@@ -237,10 +223,7 @@ function saveReport(report) {
     var val = data[key];
     if (val === 0 || val === "" || val === null) return;
 
-    // Determine if this is a payment channel or a line item
     if (key.indexOf("PAY_") === 0) {
-      // Payment channel: PAY_XXX_COOP or PAY_XXX_DJ
-      var payParts;
       if (key.endsWith("_COOP")) {
         var channelId = key.replace(/_COOP$/, "");
         if (!paymentItems[channelId]) paymentItems[channelId] = { coopAmount: 0, djAmount: 0 };
@@ -251,10 +234,8 @@ function saveReport(report) {
         paymentItems[channelId].djAmount = val;
       }
     } else if (key.indexOf("DEBTOR_") === 0) {
-      // Skip debtors here — handled separately
+      // Skip debtors here
     } else {
-      // Regular line item
-      // Figure out the item ID and which column (COOP_REV, COOP_EXP, DJ_REV, DJ_EXP)
       var suffixes = ["_COOP_REV", "_COOP_EXP", "_DJ_REV", "_DJ_EXP"];
       for (var si = 0; si < suffixes.length; si++) {
         var suffix = suffixes[si];
@@ -266,7 +247,6 @@ function saveReport(report) {
           else if (suffix === "_DJ_REV")   lineItems[itemId].djRev = val;
           else if (suffix === "_DJ_EXP")   lineItems[itemId].djExp = val;
 
-          // Determine group from item ID prefix
           if (itemId.indexOf("REV_") === 0)     lineItems[itemId].group = "revenue";
           else if (itemId.indexOf("EXP_") === 0) lineItems[itemId].group = "opex";
           else if (itemId.indexOf("COGS_") === 0) lineItems[itemId].group = "cogs";
@@ -277,7 +257,6 @@ function saveReport(report) {
     }
   });
 
-  // Write line items
   var lineRows = [];
   Object.keys(lineItems).forEach(function(itemId) {
     var item = lineItems[itemId];
@@ -287,7 +266,6 @@ function saveReport(report) {
     linesSheet.getRange(linesSheet.getLastRow() + 1, 1, lineRows.length, 8).setValues(lineRows);
   }
 
-  // --- 3. Clear and rewrite Debtors for this date ---
   clearRowsByDate(SHEET_DEBTORS, date);
   var debtorSheet = ss.getSheetByName(SHEET_DEBTORS);
   var debtors = report.debtors || [];
@@ -302,7 +280,6 @@ function saveReport(report) {
     debtorSheet.getRange(debtorSheet.getLastRow() + 1, 1, debtorRows.length, 4).setValues(debtorRows);
   }
 
-  // --- 4. Clear and rewrite PaymentChannels for this date ---
   clearRowsByDate(SHEET_PAYMENT_CHANNELS, date);
   var paySheet = ss.getSheetByName(SHEET_PAYMENT_CHANNELS);
   var payRows = [];
@@ -327,7 +304,6 @@ function saveReport(report) {
 function getReportByDate(date) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // Header
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
   var report = null;
@@ -348,7 +324,6 @@ function getReportByDate(date) {
 
   if (!report) return null;
 
-  // ReportLines
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
   var linesData = linesSheet.getDataRange().getValues();
   for (var i = 1; i < linesData.length; i++) {
@@ -360,19 +335,16 @@ function getReportByDate(date) {
       var djRev   = Number(linesData[i][5]) || 0;
       var djExp   = Number(linesData[i][6]) || 0;
 
-      // Determine the correct suffix based on group type
       if (group === "revenue") {
         if (coopRev) report.data[itemId + "_COOP_REV"] = coopRev;
         if (djRev)   report.data[itemId + "_DJ_REV"] = djRev;
       } else {
-        // expense groups
         if (coopExp) report.data[itemId + "_COOP_EXP"] = coopExp;
         if (djExp)   report.data[itemId + "_DJ_EXP"] = djExp;
       }
     }
   }
 
-  // Debtors
   var debtorSheet = ss.getSheetByName(SHEET_DEBTORS);
   var debtorData = debtorSheet.getDataRange().getValues();
   for (var i = 1; i < debtorData.length; i++) {
@@ -385,7 +357,6 @@ function getReportByDate(date) {
     }
   }
 
-  // PaymentChannels
   var paySheet = ss.getSheetByName(SHEET_PAYMENT_CHANNELS);
   var payData = paySheet.getDataRange().getValues();
   for (var i = 1; i < payData.length; i++) {
@@ -402,7 +373,7 @@ function getReportByDate(date) {
 }
 
 // ================================================================
-// LIST ALL REPORTS (Headers only)
+// LIST ALL REPORTS
 // ================================================================
 
 function listAllReports() {
@@ -422,19 +393,17 @@ function listAllReports() {
     });
   }
 
-  // Sort by date descending
   reports.sort(function(a, b) { return b.date.localeCompare(a.date); });
   return reports;
 }
 
 // ================================================================
-// QUERY REPORTS (with aggregated amounts)
+// QUERY REPORTS
 // ================================================================
 
 function queryReports(from, to, unit) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // Get all report headers in range
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
   var datesInRange = {};
@@ -453,7 +422,6 @@ function queryReports(from, to, unit) {
 
   if (Object.keys(datesInRange).length === 0) return [];
 
-  // Aggregate from ReportLines
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
   var linesData = linesSheet.getDataRange().getValues();
   for (var i = 1; i < linesData.length; i++) {
@@ -470,7 +438,6 @@ function queryReports(from, to, unit) {
     }
   }
 
-  // Convert to array and sort
   var results = Object.keys(datesInRange).map(function(d) { return datesInRange[d]; });
   results.sort(function(a, b) { return a.date.localeCompare(b.date); });
   return results;
@@ -529,17 +496,12 @@ function saveConfig(config) {
   }
 }
 
-// ================================================================
-// UTILITY: Clear rows by date
-// ================================================================
-
 function clearRowsByDate(sheetName, date) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return;
 
   var data = sheet.getDataRange().getValues();
-  // Delete from bottom to top to maintain row indices
   for (var i = data.length - 1; i >= 1; i--) {
     if (String(data[i][0]).trim() === date) {
       sheet.deleteRow(i + 1);
@@ -547,16 +509,8 @@ function clearRowsByDate(sheetName, date) {
   }
 }
 
-// ================================================================
-// MANUAL TEST FUNCTION
-// ================================================================
-
-/**
- * Run this from the Apps Script editor to verify setup works.
- * Click Run > testSetup
- */
 function testSetup() {
   ensureSheetsExist();
   Logger.log("✅ All sheets created successfully!");
-  Logger.log("Sheets: " + SpreadsheetApp.getActiveSpreadsheet().getSheets().map(function(s) { return s.getName(); }).join(", "));
+  Logger.log("Spreadsheet URL: " + SpreadsheetApp.getActiveSpreadsheet().getUrl());
 }
