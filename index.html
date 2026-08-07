@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุปรายได้ค่าใช้จ่ายประจำวัน บธว. | Daily Revenue & Expense Report</title>
+
+    <!-- SEO -->
+    <meta name="description" content="ระบบสรุปรายได้ค่าใช้จ่ายประจำวัน บธว. สหกรณ์ร้านค้าและดั่งใจเบเกอรี่ - Professional Daily Revenue & Expense Reporting">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* ================================================================
+           DESIGN SYSTEM — บธว. Daily Revenue & Expense Report
+           ================================================================ */
+
+        :root {
+            /* --- Color Palette --- */
+            --color-bg: #0f1117;
+            --color-surface: #181b25;
+            --color-surface-elevated: #1e2230;
+            --color-surface-glass: rgba(30, 34, 48, 0.75);
+            --color-border: rgba(99, 115, 146, 0.18);
+            --color-border-highlight: rgba(99, 179, 237, 0.28);
+
+            --color-text-primary: #e8ecf4;
+            --color-text-secondary: #8b97b0;
+            --color-text-muted: #5a6478;
+            --color-text-accent: #63b3ed;
+
+            /* Revenue / Income tones */
+            --color-revenue: #48bb78;
+            --color-revenue-bg: rgba(72, 187, 120, 0.08);
+            --color-revenue-glow: rgba(72, 187, 120, 0.25);
+
+            /* Expense tones */
+            --color-expense: #fc8181;
+            --color-expense-bg: rgba(252, 129, 129, 0.08);
+            --color-expense-glow: rgba(252, 129, 129, 0.25);
+
+            /* Accent / Primary */
+            --color-primary: #667eea;
+            --color-primary-hover: #7c94f4;
+            --color-primary-bg: rgba(102, 126, 234, 0.10);
+            --color-primary-glow: rgba(102, 126, 234, 0.3);
+
+            /* Warning / Discrepancy */
+            --color-warning: #ecc94b;
+            --color-warning-bg: rgba(236, 201, 75, 0.1);
+
+            /* Status */
+            --color-success: #48bb78;
+            --color-danger: #fc8181;
+            --color-info: #63b3ed;
+
+            /* --- Typography --- */
+            --font-display: 'Prompt', sans-serif;
+            --font-body: 'Sarabun', 'Prompt', sans-serif;
+
+            /* --- Spacing --- */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+
+            /* --- Radius --- */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+
+            /* --- Transitions --- */
+            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --duration-fast: 150ms;
+            --duration-normal: 250ms;
+        }
+
+        /* ================================================================
+           RESET & BASE
+           ================================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { font-size: 14px; scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 800px 600px at 20% 10%, rgba(102,126,234,0.06), transparent),
+                radial-gradient(ellipse 600px 400px at 80% 90%, rgba(72,187,120,0.04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(99,115,146,0.25); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99,115,146,0.4); }
+
+        a { color: var(--color-text-accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ================================================================
+           LAYOUT
+           ================================================================ */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            transition: transform var(--duration-normal) var(--ease-smooth);
+        }
+
+        .sidebar-brand {
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .sidebar-brand h1 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            letter-spacing: -0.02em;
+        }
+        .sidebar-brand h1 i {
+            color: var(--color-primary);
+            margin-right: var(--space-sm);
+        }
+        .sidebar-brand p {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: var(--space-md) var(--space-sm);
+            overflow-y: auto;
+        }
+        .sidebar-section-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: var(--space-md) var(--space-md) var(--space-xs);
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 10px var(--space-md);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-secondary);
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-smooth);
+            user-select: none;
+            margin-bottom: 2px;
+        }
+        .nav-item:hover {
+            background: var(--color-primary-bg);
+            color: var(--color-text-primary);
+        }
+        .nav-item.active {
+            background: var(--color-primary-bg);
+            color: var(--color-primary);
+            box-shadow: inset 3px 0 0 var(--color-primary);
+        }
+        .nav-item i { width: 18px; text-align: center; font-size: 0.9rem; }
+
+        .sidebar-footer {
+            padding: var(--space-md) var(--space-lg);
+            border-top: 1px solid var(--color-border);
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header Bar */
+        .top-bar {
+            height: 60px;
+            background: var(--color-surface-glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-xl);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        .top-bar-left h2 {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .breadcrumb {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+        .breadcrumb span { color: var(--color-text-secondary); }
+
+        /* Page Content */
+        .page-content {
+            flex: 1;
+            padding: var(--space-xl);
+            overflow-y: auto;
+        }
+
+        /* --- Tab Panels --- */
+        .tab-panel { display: none; animation: fadeSlideIn 0.35s var(--ease-smooth); }
+        .tab-panel.active { display: block; }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ================================================================
+           CARDS & PANELS
+           ================================================================ */
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: border-color var(--duration-normal) var(--ease-smooth),
+                        box-shadow var(--duration-normal) var(--ease-smooth);
+        }
+        .card:hover {
+            border-color: var(--color-border-highlight);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+        }
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+        .card-title i {
+            margin-right: var(--space-sm);
+            color: var(--color-primary);
+        }
+
+        /* Stats Row */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+        .stat-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--duration-normal) var(--ease-smooth);
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-border-highlight);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+        .stat-card.revenue::before { background: linear-gradient(90deg, var(--color-revenue), #38a169); }
+        .stat-card.expense::before { background: linear-gradient(90deg, var(--color-expense), #e53e3e); }
+        .stat-card.net::before { background: linear-gradient(90deg, var(--color-primary), #805ad5); }
+        .stat-card.balance::before { background: linear-gradient(90deg, var(--color-info), var(--color-warning)); }
+
+        .stat-card .stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-bottom: var(--space-md);
+        }
+        .stat-card.revenue .stat-icon { background: var(--color-revenue-bg); color: var(--color-revenue); }
+        .stat-card.expense .stat-icon { background: var(--color-expense-bg); color: var(--color-expense); }
+        .stat-card.net .stat-icon { background: var(--color-primary-bg); color: var(--color-primary); }
+        .stat-card.balance .stat-icon { background: var(--color-warning-bg); color: var(--color-warning); }
+
+        .stat-card .stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .stat-card .stat-value {
+            font-family: var(--font-display);
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .stat-card.revenue .stat-value { color: var(--color-revenue); }
+        .stat-card.expense .stat-value { color: var(--color-expense); }
+        .stat-card.net .stat-value { color: var(--color-primary); }
+
+        /* ================================================================
+           FORM ELEMENTS
+           ================================================================ */
+        .form-group {
+            margin-bottom: var(--space-md);
+        }
+        .form-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+        .form-input, .form-select {
+            width: 100%;
+            height: 40px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 0 var(--space-md);
+            color: var(--color-text-primary);
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            transition: border-color var(--duration-fast) var(--ease-smooth),
+                        box-shadow var(--duration-fast) var(--ease-smooth);
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-glow);
+        }
+        .form-input::placeholder { color: var(--color-text-muted); }
+        .form-input.input-currency {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+        .form-input.input-currency.revenue-field:focus {
+            border-color: var(--color-revenue);
+            box-shadow: 0 0 0 3px var(--color-revenue-glow);
+        }
+        .form-input.input-currency.expense-field:focus {
+            border-color: var(--color-expense);
+            box-shadow: 0 0 0 3px var(--color-expense-glow);
+        }
+
+        /* ================================================================
+           BUTTONS
+           ================================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 9px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-smooth);
+            user-select: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary), #805ad5);
+            color: white;
+            box-shadow: 0 2px 8px var(--color-primary-glow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px var(--color-primary-glow);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, var(--color-revenue), #38a169);
+            color: white;
+        }
+        .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 16px var(--color-revenue-glow); }
+        .btn-danger {
+            background: linear-gradient(135deg, var(--color-expense), #e53e3e);
+            color: white;
+        }
+        .btn-danger:hover { transform: translateY(-1px); }
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+        .btn-ghost:hover {
+            background: var(--color-primary-bg);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+        }
+
+        /* ================================================================
+           DATA ENTRY TABLE
+           ================================================================ */
+        .report-table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+            table-layout: fixed;
+        }
+        .report-table th {
+            background: var(--color-surface-elevated);
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--color-border);
+            text-align: center;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        .report-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--color-border);
+            vertical-align: middle;
+        }
+        .report-table tr:hover td {
+            background: rgba(102,126,234,0.03);
+        }
+
+        .report-table .section-header td {
+            background: var(--color-surface-elevated);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: var(--color-text-primary);
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--color-border);
+        }
+        .report-table .section-header.revenue-section td {
+            border-left: 3px solid var(--color-revenue);
+            color: var(--color-revenue);
+        }
+        .report-table .section-header.expense-section td {
+            border-left: 3px solid var(--color-expense);
+            color: var(--color-expense);
+        }
+        .report-table .section-header.deduct-section td {
+            border-left: 3px solid var(--color-warning);
+            color: var(--color-warning);
+        }
+        .report-table .section-header.payment-section td {
+            border-left: 3px solid var(--color-info);
+            color: var(--color-info);
+        }
+
+        .report-table .subtotal-row td {
+            font-weight: 700;
+            border-top: 2px solid var(--color-border);
+            border-bottom: 2px solid var(--color-border);
+            background: rgba(102,126,234,0.04);
+        }
+        .report-table .grand-total-row td {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.92rem;
+            border-top: 3px double var(--color-primary);
+            border-bottom: 3px double var(--color-primary);
+            background: var(--color-primary-bg);
+        }
+
+        .report-table .item-label {
+            text-align: left;
+            padding-left: 24px;
+            color: var(--color-text-secondary);
+        }
+        .report-table .source-note {
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+            font-style: italic;
+        }
+        .report-table .currency {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            padding-right: 12px;
+        }
+        .report-table .currency.positive { color: var(--color-revenue); }
+        .report-table .currency.negative { color: var(--color-expense); }
+
+        .report-table .form-input {
+            height: 32px;
+            font-size: 0.82rem;
+            padding: 0 8px;
+        }
+
+        .col-item { width: 30%; }
+        .col-coop-rev { width: 11%; }
+        .col-coop-exp { width: 11%; }
+        .col-dj-rev { width: 11%; }
+        .col-dj-exp { width: 11%; }
+        .col-note { width: 26%; }
+
+        /* ================================================================
+           RECONCILIATION & SYNC INDICATOR
+           ================================================================ */
+        .reconcile-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .reconcile-status.matched {
+            background: var(--color-revenue-bg);
+            color: var(--color-revenue);
+            border: 1px solid rgba(72,187,120,0.2);
+        }
+        .reconcile-status.discrepancy {
+            background: var(--color-expense-bg);
+            color: var(--color-expense);
+            border: 1px solid rgba(252,129,129,0.2);
+            animation: pulse-warn 2s infinite;
+        }
+        @keyframes pulse-warn {
+            0%, 100% { box-shadow: 0 0 0 0 var(--color-expense-glow); }
+            50% { box-shadow: 0 0 0 6px transparent; }
+        }
+
+        .cloud-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--color-primary-bg);
+            color: var(--color-text-accent);
+            border: 1px solid var(--color-border);
+        }
+        .cloud-badge.connected {
+            background: rgba(66, 133, 244, 0.12);
+            color: #63b3ed;
+            border-color: rgba(66, 133, 244, 0.3);
+        }
+        .cloud-badge.disconnected {
+            background: rgba(139, 151, 176, 0.1);
+            color: var(--color-text-muted);
+        }
+
+        /* ================================================================
+           REPORT HEADER
+           ================================================================ */
+        .diary-report-header {
+            text-align: center;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-md);
+            border-bottom: 2px solid var(--color-border);
+        }
+        .diary-report-header h2 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+        .diary-report-header h3 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+        .diary-report-header .report-date-display {
+            font-size: 0.9rem;
+            color: var(--color-text-accent);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* ================================================================
+           HISTORY TABLE
+           ================================================================ */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .history-table th {
+            background: var(--color-surface-elevated);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-muted);
+            border-bottom: 2px solid var(--color-border);
+        }
+        .history-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .history-table tr:hover td {
+            background: rgba(102,126,234,0.04);
+        }
+        .history-table .currency { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+        /* ================================================================
+           DATE CONTROL BAR
+           ================================================================ */
+        .date-control-bar {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-xl);
+        }
+        .date-control-bar .form-input {
+            max-width: 200px;
+        }
+
+        /* Dynamic debtors */
+        .debtor-row-actions { display: flex; gap: 4px; }
+        .btn-add-debtor, .btn-remove-debtor {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all var(--duration-fast) var(--ease-smooth);
+        }
+        .btn-add-debtor { background: var(--color-revenue-bg); color: var(--color-revenue); }
+        .btn-add-debtor:hover { background: var(--color-revenue); color: white; }
+        .btn-remove-debtor { background: var(--color-expense-bg); color: var(--color-expense); }
+        .btn-remove-debtor:hover { background: var(--color-expense); color: white; }
+
+        /* Signature */
+        .signature-section {
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+            margin-top: var(--space-2xl);
+            padding-top: var(--space-xl);
+            border-top: 1px solid var(--color-border);
+        }
+        .signature-block { text-align: center; min-width: 200px; }
+        .signature-line {
+            width: 200px;
+            border-bottom: 1px dotted var(--color-text-muted);
+            margin: 0 auto var(--space-xs);
+            height: 40px;
+        }
+        .signature-label { font-size: 0.78rem; color: var(--color-text-muted); }
+        .signature-date { font-size: 0.7rem; color: var(--color-text-muted); margin-top: var(--space-xs); }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: toastSlideIn 0.3s var(--ease-smooth);
+            max-width: 400px;
+        }
+        .toast.success { border-left: 4px solid var(--color-success); }
+        .toast.error { border-left: 4px solid var(--color-danger); }
+        .toast.info { border-left: 4px solid var(--color-info); }
+
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .chart-container { position: relative; height: 280px; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .badge-draft { background: var(--color-warning-bg); color: var(--color-warning); }
+        .badge-submitted { background: var(--color-primary-bg); color: var(--color-primary); }
+        .badge-verified { background: var(--color-revenue-bg); color: var(--color-revenue); }
+
+        .mobile-menu-btn { display: none; }
+
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .mobile-menu-btn { display: flex; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .page-content { padding: var(--space-md); }
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            @page { size: A4 portrait; margin: 12mm 10mm 15mm; }
+            body, html { background: white !important; color: #1a1a1a !important; font-size: 9pt !important; }
+            body::before { display: none !important; }
+            .sidebar, .top-bar, .no-print, .toast-container { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .page-content { padding: 0 !important; }
+            .card { border: none !important; padding: 0 !important; box-shadow: none !important; }
+            .tab-panel { display: none !important; }
+            .tab-panel.active { display: block !important; }
+            .report-table-wrapper { border: 1px solid #ccc !important; }
+            .report-table th { background: #f5f5f5 !important; color: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .report-table td { border-color: #ddd !important; }
+            .report-table .section-header td { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #333 !important; }
+            .report-table .subtotal-row td, .report-table .grand-total-row td { background: #f8f8f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .form-input { border: none !important; background: transparent !important; box-shadow: none !important; }
+            .diary-report-header h2, .diary-report-header h3 { color: #1a1a1a !important; }
+            .diary-report-header .report-date-display { color: #333 !important; }
+            .signature-line { border-bottom-color: #999 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- APP SHELL -->
+<div class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h1><i class="fas fa-chart-line"></i> บธว. Diary</h1>
+            <p>Daily Revenue & Expense Report</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-label">จัดการข้อมูล</div>
+            <div class="nav-item active" data-tab="tab-entry" onclick="switchTab('tab-entry', this)">
+                <i class="fas fa-pen-to-square"></i> บันทึกรายวัน
+            </div>
+            <div class="nav-item" data-tab="tab-report" onclick="switchTab('tab-report', this)">
+                <i class="fas fa-file-invoice-dollar"></i> ดูรายงาน
+            </div>
+
+            <div class="sidebar-section-label">วิเคราะห์</div>
+            <div class="nav-item" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard', this)">
+                <i class="fas fa-chart-bar"></i> Dashboard
+            </div>
+            <div class="nav-item" data-tab="tab-history" onclick="switchTab('tab-history', this)">
+                <i class="fas fa-clock-rotate-left"></i> ประวัติรายงาน
+            </div>
+
+            <div class="sidebar-section-label">ตั้งค่า</div>
+            <div class="nav-item" data-tab="tab-settings" onclick="switchTab('tab-settings', this)">
+                <i class="fas fa-cog"></i> ตั้งค่าระบบ &amp; Cloud
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div id="sidebar-cloud-status" class="cloud-badge disconnected mb-xs" style="width:100%; justify-content:center;">
+                <i class="fas fa-database"></i> Local Storage Only
+            </div>
+            <span style="font-size:0.65rem;">Version 1.5 — Google Sheets Ready</span>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <!-- Top Bar -->
+        <header class="top-bar no-print">
+            <div class="top-bar-left">
+                <button class="btn btn-icon btn-ghost mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h2 id="top-bar-title">บันทึกรายรับ-รายจ่ายประจำวัน</h2>
+                    <div class="breadcrumb">บธว. <span>/ สรุปรายได้ค่าใช้จ่ายประจำวัน</span></div>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <button class="btn btn-ghost btn-sm" onclick="exportPDF()">
+                    <i class="fas fa-print"></i> พิมพ์ / PDF
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="saveReport()">
+                    <i class="fas fa-floppy-disk"></i> บันทึก
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+
+            <!-- TAB 1: DATA ENTRY -->
+            <div class="tab-panel active" id="tab-entry">
+
+                <!-- Date Control -->
+                <div class="date-control-bar no-print">
+                    <i class="fas fa-calendar-day" style="color: var(--color-primary); font-size: 1.1rem;"></i>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">วันที่รายงาน</label>
+                        <input type="date" class="form-input" id="report-date" onchange="onDateChange()">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">สถานะ</label>
+                        <select class="form-select" id="report-status" style="max-width:160px;">
+                            <option value="DRAFT">📝 ฉบับร่าง</option>
+                            <option value="SUBMITTED">📤 ส่งแล้ว</option>
+                            <option value="VERIFIED">✅ ตรวจสอบแล้ว</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;"></div>
+                    <div id="reconcile-indicator"></div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card revenue">
+                        <div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div>
+                        <div class="stat-label">รวมรายได้ทั้งหมด</div>
+                        <div class="stat-value" id="stat-total-revenue">฿0.00</div>
+                    </div>
+                    <div class="stat-card expense">
+                        <div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div>
+                        <div class="stat-label">รวมค่าใช้จ่ายทั้งหมด</div>
+                        <div class="stat-value" id="stat-total-expense">฿0.00</div>
+                    </div>
+                    <div class="stat-card net">
+                        <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
+                        <div class="stat-label">ยอดรายได้สุทธิ</div>
+                        <div class="stat-value" id="stat-net-income">฿0.00</div>
+                    </div>
+                    <div class="stat-card balance">
+                        <div class="stat-icon"><i class="fas fa-landmark"></i></div>
+                        <div class="stat-label">ยอดช่องทางชำระเงิน</div>
+                        <div class="stat-value" id="stat-payment-total">฿0.00</div>
+                    </div>
+                </div>
+
+                <!-- Main Entry Table -->
+                <div class="card">
+                    <div class="card-header no-print">
+                        <h3 class="card-title"><i class="fas fa-table-columns"></i> สรุปรายได้ค่าใช้จ่ายประจำวัน บธว.</h3>
+                        <div class="flex gap-sm">
+                            <button class="btn btn-ghost btn-sm" onclick="clearForm()"><i class="fas fa-eraser"></i> ล้างข้อมูล</button>
+                            <button class="btn btn-success btn-sm" onclick="saveReport()"><i class="fas fa-save"></i> บันทึก</button>
+                        </div>
+                    </div>
+
+                    <!-- Print-only header -->
+                    <div class="diary-report-header" style="display:none;" id="print-report-header">
+                        <h2>สรุปรายได้ค่าใช้จ่ายประจำวัน บธว.</h2>
+                        <h3>ขายสินค้าและบริการ</h3>
+                        <div class="report-date-display" id="print-date-display"></div>
+                    </div>
+
+                    <div class="report-table-wrapper">
+                        <table class="report-table" id="main-entry-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-item" style="text-align:left;">รายการ</th>
+                                    <th class="col-coop-rev" colspan="2">สหกรณ์ร้านค้า</th>
+                                    <th class="col-dj-rev" colspan="2">ดั่งใจเบเกอรี่</th>
+                                    <th class="col-note">หมายเหตุ</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th>รายรับ</th>
+                                    <th>รายจ่าย</th>
+                                    <th>รายรับ</th>
+                                    <th>รายจ่าย</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="entry-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Signature -->
+                    <div class="signature-section" id="signature-section">
+                        <div class="signature-block">
+                            <div class="signature-line"></div>
+                            <div class="signature-label">ผู้จัดทำรายงาน</div>
+                            <div class="signature-date">................/................./.................</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: VIEW REPORT -->
+            <div class="tab-panel" id="tab-report">
+                <div class="card">
+                    <div class="card-header no-print">
+                        <h3 class="card-title"><i class="fas fa-file-invoice"></i> รายงานสรุปประจำวัน</h3>
+                        <div class="flex gap-sm">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <input type="date" class="form-input" id="view-report-date" style="max-width:180px;" onchange="loadReportView()">
+                            </div>
+                            <button class="btn btn-ghost btn-sm" onclick="printReport()"><i class="fas fa-print"></i> พิมพ์</button>
+                        </div>
+                    </div>
+                    <div id="report-view-content">
+                        <div style="text-align:center; padding:60px 0; color: var(--color-text-muted);">
+                            <i class="fas fa-file-circle-question" style="font-size:2.5rem; margin-bottom:16px; display:block; opacity:0.4;"></i>
+                            <p>เลือกวันที่เพื่อดูรายงาน</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: DASHBOARD -->
+            <div class="tab-panel" id="tab-dashboard">
+                <div class="stats-grid" id="dashboard-stats"></div>
+                <div class="grid-2 mb-xl">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-chart-area"></i> รายได้ vs ค่าใช้จ่าย (30 วัน)</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-revenue-expense"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-chart-pie"></i> สัดส่วนช่องทางชำระเงิน</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-payment-channels"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-chart-column"></i> เปรียบเทียบ สหกรณ์ vs ดั่งใจ</h3>
+                    </div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="chart-unit-compare"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: HISTORY / QUERY -->
+            <div class="tab-panel" id="tab-history">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-magnifying-glass-chart"></i> ค้นหาและกรองรายงาน</h3>
+                        <button class="btn btn-ghost btn-sm" onclick="syncFromCloud()"><i class="fas fa-rotate"></i> ดึงข้อมูลจาก Cloud</button>
+                    </div>
+                    <div class="flex gap-md mb-lg no-print" style="flex-wrap:wrap;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">จากวันที่</label>
+                            <input type="date" class="form-input" id="query-from" style="width:160px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">ถึงวันที่</label>
+                            <input type="date" class="form-input" id="query-to" style="width:160px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">หน่วยงาน</label>
+                            <select class="form-select" id="query-unit" style="width:160px;">
+                                <option value="ALL">ทั้งหมด</option>
+                                <option value="COOP">สหกรณ์ร้านค้า</option>
+                                <option value="DUNGJAI">ดั่งใจเบเกอรี่</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:flex-end;">
+                            <button class="btn btn-primary btn-sm" onclick="queryHistory()"><i class="fas fa-search"></i> ค้นหา</button>
+                        </div>
+                    </div>
+                    <div class="report-table-wrapper" id="history-results">
+                        <p style="text-align:center; padding:40px 0; color:var(--color-text-muted);">กรุณาเลือกช่วงวันที่แล้วกดค้นหา</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: SETTINGS & CLOUD -->
+            <div class="tab-panel" id="tab-settings">
+
+                <!-- Cloud Settings Card -->
+                <div class="card mb-lg">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fab fa-google-drive" style="color: #4285F4;"></i> Google Sheets Integration (Cloud Data Storage)</h3>
+                    </div>
+                    <p style="color:var(--color-text-muted); margin-bottom: var(--space-md); font-size:0.85rem;">
+                        เชื่อมต่อกับ Google Spreadsheet ผ่าน Apps Script เพื่อบันทึกข้อมูลแบบเรียลไทม์ และซิงค์ข้อมูลระหว่างหลายเครื่อง
+                    </p>
+                    <div class="form-group mb-md">
+                        <label class="form-label">Google Apps Script Web App URL</label>
+                        <div class="flex gap-sm">
+                            <input type="text" class="form-input" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+                            <button class="btn btn-primary btn-sm" onclick="saveGasUrl()"><i class="fas fa-plug"></i> บันทึก &amp; เชื่อมต่อ</button>
+                            <button class="btn btn-ghost btn-sm" onclick="testGasConnection()"><i class="fas fa-rotate"></i> ทดสอบการเชื่อมต่อ</button>
+                        </div>
+                    </div>
+                    <div id="gas-status-message"></div>
+
+                    <details style="margin-top:16px; font-size:0.82rem; color:var(--color-text-muted);">
+                        <summary style="cursor:pointer; color:var(--color-primary); font-weight:600;">📖 ขั้นตอนการติดตั้ง Google Apps Script (คลิกเพื่อดู)</summary>
+                        <ol style="margin-left:20px; margin-top:8px; line-height:1.8;">
+                            <li>สร้าง Google Spreadsheet ใหม่ใน Google Drive (ตั้งชื่อตามต้องการ)</li>
+                            <li>ไปที่เมนู <b>ส่วนขยาย (Extensions) &gt; Apps Script</b></li>
+                            <li>คัดลอกโค้ดทั้งหมดจากไฟล์ <code style="color:var(--color-text-accent);">google-apps-script.js</code> ไปวางใน Apps Script Editor</li>
+                            <li>กด <b>การทำให้ใช้งานได้ (Deploy) &gt; การทำให้ใช้งานได้ใหม่ (New deployment)</b></li>
+                            <li>เลือกประเภท: <b>เว็บแอป (Web App)</b> | การเรียกใช้: <b>ฉัน (Me)</b> | สิทธิ์เข้าถึง: <b>ทุกคน (Anyone)</b></li>
+                            <li>กด Deploy, อนุมัติสิทธิ์ (Authorize), แล้วคัดลอก <b>Web App URL</b> มาวางในช่องด้านบน</li>
+                        </ol>
+                    </details>
+                </div>
+
+                <!-- Master Categories Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-sliders"></i> จัดการหมวดหมู่และรายการ</h3>
+                    </div>
+                    <p style="color:var(--color-text-muted); margin-bottom: var(--space-lg);">
+                        รายการเริ่มต้นตั้งค่าตามแบบฟอร์มมาตรฐาน บธว. สามารถเพิ่ม/แก้ไข/ลบรายการได้ที่นี่
+                    </p>
+
+                    <div id="settings-categories"></div>
+
+                    <div class="flex gap-sm mt-lg">
+                        <button class="btn btn-ghost btn-sm" onclick="resetToDefaults()"><i class="fas fa-rotate-left"></i> คืนค่าเริ่มต้น</button>
+                        <button class="btn btn-primary btn-sm" onclick="exportAllData()"><i class="fas fa-file-export"></i> ส่งออกข้อมูลทั้งหมด (JSON)</button>
+                        <label class="btn btn-ghost btn-sm" style="margin-bottom:0;">
+                            <i class="fas fa-file-import"></i> นำเข้าข้อมูล (JSON)
+                            <input type="file" accept=".json" style="display:none;" onchange="importAllData(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /page-content -->
+    </div><!-- /main-content -->
+</div><!-- /app-container -->
+
+
+<!-- JAVASCRIPT -->
+<script>
+// STORAGE KEYS
+const STORAGE_KEY = 'sbac_diary_reports';
+const CATEGORIES_KEY = 'sbac_diary_categories';
+const GAS_URL_KEY = 'sbac_diary_gas_url';
+
+// Default categories
+const DEFAULT_CATEGORIES = {
+    revenue: [
+        { id: 'REV_COOP_SALES',     name: 'รายได้ขายสินค้าสหกรณ์',         source: 'จากรายงานสีลม',      units: ['COOP'] },
+        { id: 'REV_CANTEEN_RICE',    name: 'รายได้จากโรงอาหาร ข้าว',        source: 'จากรายงานสีลม',      units: ['COOP'] },
+        { id: 'REV_BAKERY_CONSIGN',  name: 'รายได้ร้านเบเกอรรี่ (ฝากขาย)',  source: 'จากรายงานสีลม',      units: ['COOP'] },
+        { id: 'REV_CONSIGNMENT',     name: 'รายได้ฝากขาย',                  source: 'จากรายงานสีลม',      units: ['COOP'] },
+        { id: 'REV_UNIFORM',         name: 'รายได้ค่าเครื่องแบบเครื่องหมาย', source: 'จากรายงานสีลม',      units: ['COOP'] },
+        { id: 'REV_CATERING',        name: 'รายได้ชุดจัดเลี้ยง',             source: 'จากรายงานดั่งใจ',    units: ['COOP','DUNGJAI'] },
+        { id: 'REV_OTHER_CREDIT',    name: 'รายได้อื่นๆ (ลูกหนี้เงินเชื่อร้านมินิมาร์ท)', source: '', units: ['COOP','DUNGJAI'] },
+        { id: 'REV_OTHER',           name: 'รายได้อื่นๆ',                   source: '',                    units: ['COOP','DUNGJAI'] }
+    ],
+    operatingExpense: [
+        { id: 'EXP_MAINTENANCE',  name: 'ค่าวัสดุอุปกรณ์บำรุงดูแลรักษา',     source: 'ใบเสร็จรับเงิน',  units: ['COOP','DUNGJAI'] },
+        { id: 'EXP_IT_SOFTWARE',  name: 'ไอที ซอฟแวร์ ตลาด โฆษณา',          source: 'ใบเสร็จรับเงิน',  units: ['COOP','DUNGJAI'] },
+        { id: 'EXP_PAYROLL',      name: 'บุคลากร ค่าจ้าง',                   source: 'เงินเดือน',        units: ['COOP','DUNGJAI'] },
+        { id: 'EXP_TRAVEL_MISC',  name: 'เดินทาง ค่าธรรมเนียม ค่าใช้จ่ายเบ็ดเตล็ด', source: 'paypers', units: ['COOP','DUNGJAI'] }
+    ],
+    cogs: [
+        { id: 'COGS_RAW_MATERIAL', name: 'วัตถุดิบต้นทุนสินค้า / ค่าขนส่ง',  source: 'paypers, ใบเสร็จรับเงิน', units: ['COOP','DUNGJAI'] }
+    ],
+    tradePayable: [
+        { id: 'PAYABLE_CONSIGN', name: 'รายจ่ายสินค้าฝากขาย', source: '', units: ['COOP'] }
+    ],
+    paymentChannels: [
+        { id: 'PAY_BAY_PP',     name: 'BAY PromptPay',       source: 'จากแอปมั่งมี',                 units: ['COOP','DUNGJAI'] },
+        { id: 'PAY_BAY_TFR',    name: 'BAY โอนเงิน',         source: 'จากรายงานกรุงศรี',             units: ['COOP'] },
+        { id: 'PAY_KTB_6040',   name: 'KrungThai 60/40',     source: 'จากแอปถุงเงิน/รายงานดั่งใจ',   units: ['COOP','DUNGJAI'] },
+        { id: 'PAY_SCB_DJ',     name: 'SCB (ดั่งใจ)',         source: 'จากรายงาน SCB',                units: ['DUNGJAI'] },
+        { id: 'PAY_CASH',       name: 'เงินสด',              source: 'จากเงินสด',                    units: ['COOP','DUNGJAI'] }
+    ],
+    defaultDebtors: [
+        { name: 'อ.เอก' },
+        { name: 'อ.น้ำ' }
+    ]
+};
+
+// STATE
+let categories = loadCategories();
+let allReports = loadAllReports();
+let currentDebtors = [];
+let charts = {};
+let gasUrl = localStorage.getItem(GAS_URL_KEY) || '';
+
+// INITIALIZATION
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('report-date').value = today;
+    document.getElementById('view-report-date').value = today;
+
+    const thirtyAgo = new Date();
+    thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+    document.getElementById('query-from').value = thirtyAgo.toISOString().split('T')[0];
+    document.getElementById('query-to').value = today;
+
+    if (gasUrl) {
+        document.getElementById('gas-url-input').value = gasUrl;
+    }
+    updateCloudStatusBadge();
+
+    buildEntryTable();
+    loadReportForDate(today);
+    renderSettingsPanel();
+});
+
+// NAVIGATION
+function switchTab(tabId, navEl) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    document.getElementById(tabId).classList.add('active');
+    if (navEl) navEl.classList.add('active');
+
+    const titles = {
+        'tab-entry': 'บันทึกรายรับ-รายจ่ายประจำวัน',
+        'tab-report': 'ดูรายงานสรุปประจำวัน',
+        'tab-dashboard': 'Dashboard วิเคราะห์ภาพรวม',
+        'tab-history': 'ประวัติรายงานและค้นหา',
+        'tab-settings': 'ตั้งค่าระบบ & Cloud'
+    };
+    document.getElementById('top-bar-title').textContent = titles[tabId] || '';
+
+    if (tabId === 'tab-dashboard') {
+        renderDashboard();
+    }
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+// BUILD ENTRY TABLE
+function buildEntryTable() {
+    const tbody = document.getElementById('entry-tbody');
+    let html = '';
+
+    html += sectionHeaderRow('รายได้', 'revenue-section', 'fa-arrow-trend-up');
+    categories.revenue.forEach(item => { html += entryRow(item, 'revenue'); });
+    html += subtotalRow('subtotal-revenue', 'รวม');
+    html += grandTotalRow('total-revenue', 'รวมรายได้');
+
+    html += sectionHeaderRow('หัก  ค่าใช้จ่ายในการดำเนินการ', 'expense-section', 'fa-arrow-trend-down');
+    categories.operatingExpense.forEach(item => { html += entryRow(item, 'opex'); });
+    html += subtotalRow('subtotal-opex', 'รวม');
+
+    html += sectionHeaderRow('หัก  ต้นทุนสินค้า', 'expense-section', 'fa-box-open');
+    categories.cogs.forEach(item => { html += entryRow(item, 'cogs'); });
+    html += subtotalRow('subtotal-cogs', 'รวม');
+
+    html += sectionHeaderRow('หัก  ลูกหนี้ ขายเชื่อ', 'deduct-section', 'fa-user-tag');
+    html += `<tr id="debtor-rows-start"></tr>`;
+    currentDebtors = [...categories.defaultDebtors];
+    currentDebtors.forEach((d, i) => { html += debtorRow(d.name, i); });
+    html += `<tr id="debtor-rows-end">
+        <td colspan="6" style="text-align:right; padding:6px 12px;">
+            <button class="btn btn-ghost btn-sm" onclick="addDebtorRow()"><i class="fas fa-plus"></i> เพิ่มรายชื่อ</button>
+        </td>
+    </tr>`;
+    html += subtotalRow('subtotal-debtor', 'รวม');
+
+    html += sectionHeaderRow('เจ้าหนี้การค้า', 'expense-section', 'fa-handshake');
+    categories.tradePayable.forEach(item => { html += entryRow(item, 'payable'); });
+    html += subtotalRow('subtotal-payable', 'รวม');
+
+    html += grandTotalRow('total-expense', 'รวมค่าใช้จ่าย');
+
+    html += sectionHeaderRow('ช่องทางการชำระเงิน', 'payment-section', 'fa-wallet');
+    categories.paymentChannels.forEach(item => { html += paymentRow(item); });
+    html += grandTotalRow('total-payment', 'รวมรายได้ของทุกช่องทางการชำระเงิน');
+
+    tbody.innerHTML = html;
+}
+
+function sectionHeaderRow(label, cssClass, icon) {
+    return `<tr class="section-header ${cssClass}">
+        <td colspan="6"><i class="fas ${icon}" style="margin-right:8px;"></i>${label}</td>
+    </tr>`;
+}
+
+function entryRow(item, group) {
+    const coopRev = item.units.includes('COOP');
+    const djRev = item.units.includes('DUNGJAI');
+    const isRevenueGroup = (group === 'revenue');
+    const isExpenseGroup = !isRevenueGroup;
+
+    return `<tr data-item-id="${item.id}" data-group="${group}">
+        <td class="item-label">${item.name}</td>
+        <td>${coopRev && isRevenueGroup ? currencyInput(`${item.id}_COOP_REV`, 'revenue-field') : (coopRev ? '' : '<span class="text-muted">—</span>')}</td>
+        <td>${coopRev && isExpenseGroup ? currencyInput(`${item.id}_COOP_EXP`, 'expense-field') : (coopRev ? '' : '<span class="text-muted">—</span>')}</td>
+        <td>${djRev && isRevenueGroup ? currencyInput(`${item.id}_DJ_REV`, 'revenue-field') : (djRev ? '' : '<span class="text-muted">—</span>')}</td>
+        <td>${djRev && isExpenseGroup ? currencyInput(`${item.id}_DJ_EXP`, 'expense-field') : (djRev ? '' : '<span class="text-muted">—</span>')}</td>
+        <td class="source-note">${item.source}</td>
+    </tr>`;
+}
+
+function debtorRow(name, index) {
+    return `<tr class="debtor-row" data-debtor-index="${index}">
+        <td class="item-label">
+            <input type="text" class="form-input" value="${name}" style="max-width:180px; height:30px; font-size:0.8rem;"
+                   onchange="updateDebtorName(${index}, this.value)" placeholder="ชื่อลูกหนี้">
+        </td>
+        <td>${currencyInput(`DEBTOR_${index}_COOP_REV`, 'revenue-field')}</td>
+        <td>${currencyInput(`DEBTOR_${index}_COOP_EXP`, 'expense-field')}</td>
+        <td></td>
+        <td></td>
+        <td class="debtor-row-actions">
+            <button class="btn-remove-debtor" onclick="removeDebtorRow(${index})" title="ลบ"><i class="fas fa-minus"></i></button>
+        </td>
+    </tr>`;
+}
+
+function paymentRow(item) {
+    const coopRev = item.units.includes('COOP');
+    const djRev = item.units.includes('DUNGJAI');
+    return `<tr data-item-id="${item.id}" data-group="payment">
+        <td class="item-label">${item.name}</td>
+        <td colspan="2">${coopRev ? currencyInput(`${item.id}_COOP`, 'revenue-field') : '<span class="text-muted">—</span>'}</td>
+        <td colspan="2">${djRev ? currencyInput(`${item.id}_DJ`, 'revenue-field') : '<span class="text-muted">—</span>'}</td>
+        <td class="source-note">${item.source}</td>
+    </tr>`;
+}
+
+function subtotalRow(id, label) {
+    return `<tr class="subtotal-row" id="${id}">
+        <td class="item-label" style="font-weight:700;">${label}</td>
+        <td class="currency" id="${id}_COOP_REV">0.00</td>
+        <td class="currency" id="${id}_COOP_EXP">0.00</td>
+        <td class="currency" id="${id}_DJ_REV">0.00</td>
+        <td class="currency" id="${id}_DJ_EXP">0.00</td>
+        <td></td>
+    </tr>`;
+}
+
+function grandTotalRow(id, label) {
+    return `<tr class="grand-total-row" id="${id}">
+        <td style="text-align:left; padding-left:12px;">${label}</td>
+        <td class="currency" id="${id}_COOP_REV">0.00</td>
+        <td class="currency" id="${id}_COOP_EXP">0.00</td>
+        <td class="currency" id="${id}_DJ_REV">0.00</td>
+        <td class="currency" id="${id}_DJ_EXP">0.00</td>
+        <td class="currency" id="${id}_COMBINED"></td>
+    </tr>`;
+}
+
+function currencyInput(id, extraClass) {
+    return `<input type="text" class="form-input input-currency ${extraClass}" id="inp_${id}"
+            oninput="formatCurrencyInput(this); recalculate();"
+            onfocus="this.select();" placeholder="0" autocomplete="off">`;
+}
+
+function addDebtorRow() {
+    const newIndex = currentDebtors.length;
+    currentDebtors.push({ name: '' });
+    const endMarker = document.getElementById('debtor-rows-end');
+    const newRow = document.createElement('tr');
+    newRow.className = 'debtor-row';
+    newRow.dataset.debtorIndex = newIndex;
+    newRow.innerHTML = `
+        <td class="item-label">
+            <input type="text" class="form-input" value="" style="max-width:180px; height:30px; font-size:0.8rem;"
+                   onchange="updateDebtorName(${newIndex}, this.value)" placeholder="ชื่อลูกหนี้">
+        </td>
+        <td>${currencyInput(`DEBTOR_${newIndex}_COOP_REV`, 'revenue-field')}</td>
+        <td>${currencyInput(`DEBTOR_${newIndex}_COOP_EXP`, 'expense-field')}</td>
+        <td></td>
+        <td></td>
+        <td class="debtor-row-actions">
+            <button class="btn-remove-debtor" onclick="removeDebtorRow(${newIndex})" title="ลบ"><i class="fas fa-minus"></i></button>
+        </td>`;
+    endMarker.parentNode.insertBefore(newRow, endMarker);
+}
+
+function removeDebtorRow(index) {
+    const row = document.querySelector(`tr.debtor-row[data-debtor-index="${index}"]`);
+    if (row) {
+        row.remove();
+        recalculate();
+    }
+}
+
+function updateDebtorName(index, value) {
+    if (currentDebtors[index]) {
+        currentDebtors[index].name = value;
+    }
+}
+
+function formatCurrencyInput(el) {
+    let val = el.value.replace(/[^0-9.]/g, '');
+    const parts = val.split('.');
+    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+    el.value = val;
+}
+
+function getInputValue(id) {
+    const el = document.getElementById('inp_' + id);
+    if (!el) return 0;
+    return parseFloat(el.value.replace(/,/g, '')) || 0;
+}
+
+function formatNumber(num) {
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatCurrency(num) {
+    return '฿' + formatNumber(num);
+}
+
+function recalculate() {
+    let totalCoopRev = 0, totalCoopExp = 0, totalDjRev = 0, totalDjExp = 0;
+
+    let subCoopRev = 0, subDjRev = 0;
+    categories.revenue.forEach(item => {
+        if (item.units.includes('COOP'))    subCoopRev += getInputValue(`${item.id}_COOP_REV`);
+        if (item.units.includes('DUNGJAI')) subDjRev += getInputValue(`${item.id}_DJ_REV`);
+    });
+    setCell('subtotal-revenue_COOP_REV', subCoopRev);
+    setCell('subtotal-revenue_DJ_REV', subDjRev);
+    setCell('subtotal-revenue_COOP_EXP', 0);
+    setCell('subtotal-revenue_DJ_EXP', 0);
+
+    setCell('total-revenue_COOP_REV', subCoopRev);
+    setCell('total-revenue_DJ_REV', subDjRev);
+    setCell('total-revenue_COMBINED', subCoopRev + subDjRev);
+    totalCoopRev = subCoopRev;
+    totalDjRev = subDjRev;
+
+    let subOpexCoopExp = 0, subOpexDjExp = 0;
+    categories.operatingExpense.forEach(item => {
+        if (item.units.includes('COOP'))    subOpexCoopExp += getInputValue(`${item.id}_COOP_EXP`);
+        if (item.units.includes('DUNGJAI')) subOpexDjExp += getInputValue(`${item.id}_DJ_EXP`);
+    });
+    setCell('subtotal-opex_COOP_EXP', subOpexCoopExp);
+    setCell('subtotal-opex_DJ_EXP', subOpexDjExp);
+    setCell('subtotal-opex_COOP_REV', 0);
+    setCell('subtotal-opex_DJ_REV', 0);
+
+    let subCogsCoopExp = 0, subCogsDjExp = 0;
+    categories.cogs.forEach(item => {
+        if (item.units.includes('COOP'))    subCogsCoopExp += getInputValue(`${item.id}_COOP_EXP`);
+        if (item.units.includes('DUNGJAI')) subCogsDjExp += getInputValue(`${item.id}_DJ_EXP`);
+    });
+    setCell('subtotal-cogs_COOP_EXP', subCogsCoopExp);
+    setCell('subtotal-cogs_DJ_EXP', subCogsDjExp);
+    setCell('subtotal-cogs_COOP_REV', 0);
+    setCell('subtotal-cogs_DJ_REV', 0);
+
+    let subDebtorCoopRev = 0, subDebtorCoopExp = 0;
+    document.querySelectorAll('tr.debtor-row').forEach(row => {
+        const idx = row.dataset.debtorIndex;
+        subDebtorCoopRev += getInputValue(`DEBTOR_${idx}_COOP_REV`);
+        subDebtorCoopExp += getInputValue(`DEBTOR_${idx}_COOP_EXP`);
+    });
+    setCell('subtotal-debtor_COOP_REV', subDebtorCoopRev);
+    setCell('subtotal-debtor_COOP_EXP', subDebtorCoopExp);
+    setCell('subtotal-debtor_DJ_REV', 0);
+    setCell('subtotal-debtor_DJ_EXP', 0);
+
+    let subPayableCoopExp = 0;
+    categories.tradePayable.forEach(item => {
+        if (item.units.includes('COOP')) subPayableCoopExp += getInputValue(`${item.id}_COOP_EXP`);
+    });
+    setCell('subtotal-payable_COOP_EXP', subPayableCoopExp);
+    setCell('subtotal-payable_COOP_REV', 0);
+    setCell('subtotal-payable_DJ_REV', 0);
+    setCell('subtotal-payable_DJ_EXP', 0);
+
+    totalCoopExp = subOpexCoopExp + subCogsCoopExp + subDebtorCoopExp + subPayableCoopExp;
+    totalDjExp = subOpexDjExp + subCogsDjExp;
+    setCell('total-expense_COOP_REV', subDebtorCoopRev);
+    setCell('total-expense_COOP_EXP', totalCoopExp);
+    setCell('total-expense_DJ_REV', 0);
+    setCell('total-expense_DJ_EXP', totalDjExp);
+    setCell('total-expense_COMBINED', totalCoopExp + totalDjExp);
+
+    let payCoopTotal = 0, payDjTotal = 0;
+    categories.paymentChannels.forEach(item => {
+        if (item.units.includes('COOP'))    payCoopTotal += getInputValue(`${item.id}_COOP`);
+        if (item.units.includes('DUNGJAI')) payDjTotal += getInputValue(`${item.id}_DJ`);
+    });
+    setCell('total-payment_COOP_REV', payCoopTotal);
+    setCell('total-payment_COOP_EXP', '');
+    setCell('total-payment_DJ_REV', payDjTotal);
+    setCell('total-payment_DJ_EXP', '');
+    setCell('total-payment_COMBINED', payCoopTotal + payDjTotal);
+
+    const grandRevenue = subCoopRev + subDjRev;
+    const grandExpense = totalCoopExp + totalDjExp;
+    const netIncome = grandRevenue - grandExpense;
+    const paymentTotal = payCoopTotal + payDjTotal;
+
+    document.getElementById('stat-total-revenue').textContent = formatCurrency(grandRevenue);
+    document.getElementById('stat-total-expense').textContent = formatCurrency(grandExpense);
+    document.getElementById('stat-net-income').textContent = formatCurrency(netIncome);
+    document.getElementById('stat-payment-total').textContent = formatCurrency(paymentTotal);
+
+    const indicator = document.getElementById('reconcile-indicator');
+    const diff = Math.abs(netIncome - paymentTotal);
+    if (grandRevenue === 0 && paymentTotal === 0) {
+        indicator.innerHTML = '';
+    } else if (diff < 0.01) {
+        indicator.innerHTML = '<span class="reconcile-status matched"><i class="fas fa-circle-check"></i> ยอดตรงกัน</span>';
+    } else {
+        indicator.innerHTML = `<span class="reconcile-status discrepancy"><i class="fas fa-triangle-exclamation"></i> ผลต่าง ฿${formatNumber(diff)}</span>`;
+    }
+}
+
+function setCell(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (typeof value === 'number') {
+        el.textContent = formatNumber(value);
+        el.classList.toggle('positive', value > 0);
+        el.classList.toggle('negative', value < 0);
+    } else {
+        el.textContent = value;
+    }
+}
+
+// SAVE / LOAD REPORTS (Dual Storage: Google Sheets + Local Cache)
+async function saveReport() {
+    const reportDate = document.getElementById('report-date').value;
+    if (!reportDate) {
+        showToast('กรุณาเลือกวันที่', 'error');
+        return;
+    }
+
+    const report = {
+        date: reportDate,
+        status: document.getElementById('report-status').value,
+        savedAt: new Date().toISOString(),
+        data: {},
+        debtors: []
+    };
+
+    document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => {
+        const id = inp.id.replace('inp_', '');
+        const val = parseFloat(inp.value) || 0;
+        if (val !== 0) {
+            report.data[id] = val;
+        }
+    });
+
+    document.querySelectorAll('tr.debtor-row').forEach(row => {
+        const idx = row.dataset.debtorIndex;
+        const nameInput = row.querySelector('input[type="text"]');
+        report.debtors.push({
+            name: nameInput ? nameInput.value : '',
+            index: idx,
+            coopRev: getInputValue(`DEBTOR_${idx}_COOP_REV`),
+            coopExp: getInputValue(`DEBTOR_${idx}_COOP_EXP`)
+        });
+    });
+
+    // 1. Always save to local storage cache
+    allReports[reportDate] = report;
+    saveAllReports();
+
+    // 2. If Google Sheets URL configured, sync to Cloud
+    if (gasUrl) {
+        showToast('กำลังบันทึกลง Google Sheets...', 'info');
+        try {
+            const res = await fetch(gasUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'saveReport', report: report })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                showToast(`✅ บันทึกลง Google Sheets และ เครื่อง เรียบร้อย (${formatThaiDate(reportDate)})`, 'success');
+            } else {
+                showToast('บันทึกลงเครื่องแล้ว แต่วอนคำขอ Google Sheets: ' + result.message, 'error');
+            }
+        } catch (err) {
+            showToast('บันทึกลงเครื่องเรียบร้อย (ไม่สามารถเชื่อมต่อ Google Sheets ได้)', 'info');
+        }
+    } else {
+        showToast(`บันทึกรายงานลงเครื่องสำเร็จ (${formatThaiDate(reportDate)})`, 'success');
+    }
+}
+
+async function loadReportForDate(dateStr) {
+    // Check if we have gasUrl and fetch cloud version
+    if (gasUrl) {
+        try {
+            const res = await fetch(`${gasUrl}?action=getReport&date=${dateStr}`);
+            const result = await res.json();
+            if (result.status === 'success' && result.data) {
+                allReports[dateStr] = result.data;
+                saveAllReports();
+            }
+        } catch (err) {
+            // fall back to local
+        }
+    }
+
+    const report = allReports[dateStr];
+    if (!report) {
+        document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
+        recalculate();
+        return;
+    }
+
+    document.getElementById('report-status').value = report.status || 'DRAFT';
+
+    if (report.debtors && report.debtors.length > 0) {
+        document.querySelectorAll('tr.debtor-row').forEach(r => r.remove());
+        currentDebtors = report.debtors.map(d => ({ name: d.name }));
+        const endMarker = document.getElementById('debtor-rows-end');
+        report.debtors.forEach((d, i) => {
+            const newRow = document.createElement('tr');
+            newRow.className = 'debtor-row';
+            newRow.dataset.debtorIndex = i;
+            newRow.innerHTML = `
+                <td class="item-label">
+                    <input type="text" class="form-input" value="${d.name}" style="max-width:180px; height:30px; font-size:0.8rem;"
+                           onchange="updateDebtorName(${i}, this.value)" placeholder="ชื่อลูกหนี้">
+                </td>
+                <td>${currencyInput(`DEBTOR_${i}_COOP_REV`, 'revenue-field')}</td>
+                <td>${currencyInput(`DEBTOR_${i}_COOP_EXP`, 'expense-field')}</td>
+                <td></td>
+                <td></td>
+                <td class="debtor-row-actions">
+                    <button class="btn-remove-debtor" onclick="removeDebtorRow(${i})" title="ลบ"><i class="fas fa-minus"></i></button>
+                </td>`;
+            endMarker.parentNode.insertBefore(newRow, endMarker);
+        });
+    }
+
+    document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
+    if (report.data) {
+        Object.entries(report.data).forEach(([key, val]) => {
+            const el = document.getElementById('inp_' + key);
+            if (el && val !== 0) { el.value = val; }
+        });
+    }
+
+    recalculate();
+}
+
+function onDateChange() {
+    const dateStr = document.getElementById('report-date').value;
+    loadReportForDate(dateStr);
+}
+
+// REPORT VIEW (Read-only)
+function loadReportView() {
+    const dateStr = document.getElementById('view-report-date').value;
+    const report = allReports[dateStr];
+    const container = document.getElementById('report-view-content');
+
+    if (!report) {
+        container.innerHTML = `<div style="text-align:center; padding:60px 0; color: var(--color-text-muted);">
+            <i class="fas fa-file-circle-xmark" style="font-size:2.5rem; margin-bottom:16px; display:block; opacity:0.4;"></i>
+            <p>ไม่พบรายงานสำหรับวันที่ ${formatThaiDate(dateStr)}</p>
+        </div>`;
+        return;
+    }
+
+    let html = `
+        <div class="diary-report-header" style="display:block;">
+            <h2>สรุปรายได้ค่าใช้จ่ายประจำวัน บธว.</h2>
+            <h3>ขายสินค้าและบริการ</h3>
+            <div class="report-date-display">${formatThaiDate(dateStr)}</div>
+        </div>
+        <div class="report-table-wrapper">
+            <table class="report-table">
+                <thead>
+                    <tr><th style="text-align:left;">รายการ</th><th colspan="2">สหกรณ์ร้านค้า</th><th colspan="2">ดั่งใจเบเกอรี่</th><th>หมายเหตุ</th></tr>
+                    <tr><th></th><th>รายรับ</th><th>รายจ่าย</th><th>รายรับ</th><th>รายจ่าย</th><th></th></tr>
+                </thead>
+                <tbody>`;
+
+    const d = report.data || {};
+    const val = (key) => d[key] ? formatNumber(d[key]) : '';
+
+    html += sectionHeaderRow('รายได้', 'revenue-section', 'fa-arrow-trend-up');
+    let sCoopRev = 0, sDjRev = 0;
+    categories.revenue.forEach(item => {
+        const cr = d[`${item.id}_COOP_REV`] || 0;
+        const dr = d[`${item.id}_DJ_REV`] || 0;
+        sCoopRev += cr; sDjRev += dr;
+        html += `<tr><td class="item-label">${item.name}</td>
+                 <td class="currency">${cr ? formatNumber(cr) : ''}</td><td></td>
+                 <td class="currency">${dr ? formatNumber(dr) : ''}</td><td></td>
+                 <td class="source-note">${item.source}</td></tr>`;
+    });
+    html += `<tr class="grand-total-row"><td style="text-align:left;padding-left:12px;">รวมรายได้</td>
+             <td class="currency positive">${formatNumber(sCoopRev)}</td><td></td>
+             <td class="currency positive">${formatNumber(sDjRev)}</td><td></td>
+             <td class="currency">${formatNumber(sCoopRev + sDjRev)}</td></tr>`;
+
+    html += sectionHeaderRow('หัก  ค่าใช้จ่ายในการดำเนินการ', 'expense-section', 'fa-arrow-trend-down');
+    let sOpexCoop = 0, sOpexDj = 0;
+    categories.operatingExpense.forEach(item => {
+        const ce = d[`${item.id}_COOP_EXP`] || 0;
+        const de = d[`${item.id}_DJ_EXP`] || 0;
+        sOpexCoop += ce; sOpexDj += de;
+        html += `<tr><td class="item-label">${item.name}</td>
+                 <td></td><td class="currency">${ce ? formatNumber(ce) : ''}</td>
+                 <td></td><td class="currency">${de ? formatNumber(de) : ''}</td>
+                 <td class="source-note">${item.source}</td></tr>`;
+    });
+    html += `<tr class="subtotal-row"><td class="item-label" style="font-weight:700;">รวม</td>
+             <td></td><td class="currency">${formatNumber(sOpexCoop)}</td>
+             <td></td><td class="currency">${formatNumber(sOpexDj)}</td><td></td></tr>`;
+
+    html += sectionHeaderRow('หัก  ต้นทุนสินค้า', 'expense-section', 'fa-box-open');
+    let sCogsCoop = 0, sCogsDj = 0;
+    categories.cogs.forEach(item => {
+        const ce = d[`${item.id}_COOP_EXP`] || 0;
+        const de = d[`${item.id}_DJ_EXP`] || 0;
+        sCogsCoop += ce; sCogsDj += de;
+        html += `<tr><td class="item-label">${item.name}</td>
+                 <td></td><td class="currency">${ce ? formatNumber(ce) : ''}</td>
+                 <td></td><td class="currency">${de ? formatNumber(de) : ''}</td>
+                 <td class="source-note">${item.source}</td></tr>`;
+    });
+    html += `<tr class="subtotal-row"><td class="item-label" style="font-weight:700;">รวม</td>
+             <td></td><td class="currency">${formatNumber(sCogsCoop)}</td>
+             <td></td><td class="currency">${formatNumber(sCogsDj)}</td><td></td></tr>`;
+
+    if (report.debtors && report.debtors.length > 0) {
+        html += sectionHeaderRow('หัก  ลูกหนี้ ขายเชื่อ', 'deduct-section', 'fa-user-tag');
+        let sDebtRev = 0, sDebtExp = 0;
+        report.debtors.forEach(deb => {
+            sDebtRev += deb.coopRev || 0;
+            sDebtExp += deb.coopExp || 0;
+            html += `<tr><td class="item-label">${deb.name || '—'}</td>
+                     <td class="currency">${deb.coopRev ? formatNumber(deb.coopRev) : ''}</td>
+                     <td class="currency">${deb.coopExp ? formatNumber(deb.coopExp) : ''}</td>
+                     <td></td><td></td><td></td></tr>`;
+        });
+        html += `<tr class="subtotal-row"><td class="item-label" style="font-weight:700;">รวม</td>
+                 <td class="currency">${formatNumber(sDebtRev)}</td><td class="currency">${formatNumber(sDebtExp)}</td>
+                 <td></td><td></td><td></td></tr>`;
+    }
+
+    html += sectionHeaderRow('เจ้าหนี้การค้า', 'expense-section', 'fa-handshake');
+    let sPayableCoop = 0;
+    categories.tradePayable.forEach(item => {
+        const ce = d[`${item.id}_COOP_EXP`] || 0;
+        sPayableCoop += ce;
+        html += `<tr><td class="item-label">${item.name}</td>
+                 <td></td><td class="currency">${ce ? formatNumber(ce) : ''}</td>
+                 <td></td><td></td><td></td></tr>`;
+    });
+    html += `<tr class="subtotal-row"><td class="item-label" style="font-weight:700;">รวม</td>
+             <td></td><td class="currency">${formatNumber(sPayableCoop)}</td>
+             <td></td><td></td><td></td></tr>`;
+
+    const totalExpCoop = sOpexCoop + sCogsCoop + sPayableCoop;
+    const totalExpDj = sOpexDj + sCogsDj;
+    html += `<tr class="grand-total-row"><td style="text-align:left;padding-left:12px;">รวมค่าใช้จ่าย</td>
+             <td></td><td class="currency negative">${formatNumber(totalExpCoop)}</td>
+             <td></td><td class="currency negative">${formatNumber(totalExpDj)}</td>
+             <td class="currency">${formatNumber(totalExpCoop + totalExpDj)}</td></tr>`;
+
+    html += sectionHeaderRow('ช่องทางการชำระเงิน', 'payment-section', 'fa-wallet');
+    let sPayCoop = 0, sPayDj = 0;
+    categories.paymentChannels.forEach(item => {
+        const c = d[`${item.id}_COOP`] || 0;
+        const dj = d[`${item.id}_DJ`] || 0;
+        sPayCoop += c; sPayDj += dj;
+        html += `<tr><td class="item-label">${item.name}</td>
+                 <td class="currency" colspan="2">${c ? formatNumber(c) : ''}</td>
+                 <td class="currency" colspan="2">${dj ? formatNumber(dj) : ''}</td>
+                 <td class="source-note">${item.source}</td></tr>`;
+    });
+    html += `<tr class="grand-total-row"><td style="text-align:left;padding-left:12px;">รวมรายได้ของทุกช่องทางการชำระเงิน</td>
+             <td class="currency" colspan="2">${formatNumber(sPayCoop)}</td>
+             <td class="currency" colspan="2">${formatNumber(sPayDj)}</td>
+             <td class="currency">${formatNumber(sPayCoop + sPayDj)}</td></tr>`;
+
+    html += `</tbody></table></div>`;
+
+    html += `<div class="signature-section">
+        <div class="signature-block">
+            <div class="signature-line"></div>
+            <div class="signature-label">ผู้จัดทำรายงาน</div>
+            <div class="signature-date">................/................./.................</div>
+        </div>
+    </div>`;
+
+    container.innerHTML = html;
+}
+
+// DASHBOARD
+function renderDashboard() {
+    const dates = Object.keys(allReports).sort();
+    if (dates.length === 0) {
+        document.getElementById('dashboard-stats').innerHTML = `
+            <div class="stat-card net" style="grid-column: 1/-1; text-align:center;">
+                <div class="stat-icon" style="margin:0 auto 12px;"><i class="fas fa-chart-bar"></i></div>
+                <div class="stat-label">ยังไม่มีข้อมูล</div>
+                <div class="stat-value" style="font-size:1rem; color:var(--color-text-muted);">กรุณาบันทึกรายงานอย่างน้อย 1 วัน เพื่อดู Dashboard</div>
+            </div>`;
+        return;
+    }
+
+    let totalRev = 0, totalExp = 0, totalDays = dates.length;
+    const revByDate = [], expByDate = [], labels = [];
+    const payChannelTotals = {};
+
+    dates.forEach(date => {
+        const r = allReports[date];
+        const d = r.data || {};
+        let dayRev = 0, dayExp = 0;
+
+        categories.revenue.forEach(item => {
+            dayRev += (d[`${item.id}_COOP_REV`] || 0) + (d[`${item.id}_DJ_REV`] || 0);
+        });
+        categories.operatingExpense.forEach(item => {
+            dayExp += (d[`${item.id}_COOP_EXP`] || 0) + (d[`${item.id}_DJ_EXP`] || 0);
+        });
+        categories.cogs.forEach(item => {
+            dayExp += (d[`${item.id}_COOP_EXP`] || 0) + (d[`${item.id}_DJ_EXP`] || 0);
+        });
+        categories.tradePayable.forEach(item => {
+            dayExp += (d[`${item.id}_COOP_EXP`] || 0);
+        });
+
+        categories.paymentChannels.forEach(item => {
+            const v = (d[`${item.id}_COOP`] || 0) + (d[`${item.id}_DJ`] || 0);
+            payChannelTotals[item.name] = (payChannelTotals[item.name] || 0) + v;
+        });
+
+        totalRev += dayRev;
+        totalExp += dayExp;
+        revByDate.push(dayRev);
+        expByDate.push(dayExp);
+        labels.push(formatShortDate(date));
+    });
+
+    document.getElementById('dashboard-stats').innerHTML = `
+        <div class="stat-card revenue">
+            <div class="stat-icon"><i class="fas fa-arrow-trend-up"></i></div>
+            <div class="stat-label">รายได้รวมทั้งหมด (${totalDays} วัน)</div>
+            <div class="stat-value">${formatCurrency(totalRev)}</div>
+        </div>
+        <div class="stat-card expense">
+            <div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div>
+            <div class="stat-label">ค่าใช้จ่ายรวมทั้งหมด</div>
+            <div class="stat-value">${formatCurrency(totalExp)}</div>
+        </div>
+        <div class="stat-card net">
+            <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
+            <div class="stat-label">กำไรสุทธิ</div>
+            <div class="stat-value">${formatCurrency(totalRev - totalExp)}</div>
+        </div>
+        <div class="stat-card balance">
+            <div class="stat-icon"><i class="fas fa-calculator"></i></div>
+            <div class="stat-label">ค่าเฉลี่ยรายได้/วัน</div>
+            <div class="stat-value">${formatCurrency(totalDays > 0 ? totalRev / totalDays : 0)}</div>
+        </div>`;
+
+    if (charts.revExp) charts.revExp.destroy();
+    const ctx1 = document.getElementById('chart-revenue-expense').getContext('2d');
+    charts.revExp = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'รายได้',
+                    data: revByDate,
+                    borderColor: '#48bb78',
+                    backgroundColor: 'rgba(72,187,120,0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#48bb78'
+                },
+                {
+                    label: 'ค่าใช้จ่าย',
+                    data: expByDate,
+                    borderColor: '#fc8181',
+                    backgroundColor: 'rgba(252,129,129,0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fc8181'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#8b97b0', font: { family: 'Prompt' } } } },
+            scales: {
+                x: { ticks: { color: '#5a6478', font: { size: 10 } }, grid: { color: 'rgba(99,115,146,0.1)' } },
+                y: { ticks: { color: '#5a6478', callback: v => '฿' + v.toLocaleString() }, grid: { color: 'rgba(99,115,146,0.1)' } }
+            }
+        }
+    });
+
+    if (charts.payChannel) charts.payChannel.destroy();
+    const payLabels = Object.keys(payChannelTotals);
+    const payValues = Object.values(payChannelTotals);
+    const payColors = ['#667eea', '#48bb78', '#ecc94b', '#fc8181', '#63b3ed'];
+    const ctx2 = document.getElementById('chart-payment-channels').getContext('2d');
+    charts.payChannel = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: payLabels,
+            datasets: [{
+                data: payValues,
+                backgroundColor: payColors,
+                borderColor: '#181b25',
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { color: '#8b97b0', font: { family: 'Prompt', size: 11 }, padding: 12 }
+                }
+            }
+        }
+    });
+
+    if (charts.unitCompare) charts.unitCompare.destroy();
+    let coopTotal = 0, djTotal = 0;
+    dates.forEach(date => {
+        const d = allReports[date].data || {};
+        categories.revenue.forEach(item => {
+            coopTotal += (d[`${item.id}_COOP_REV`] || 0);
+            djTotal += (d[`${item.id}_DJ_REV`] || 0);
+        });
+    });
+    const ctx3 = document.getElementById('chart-unit-compare').getContext('2d');
+    charts.unitCompare = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: ['สหกรณ์ร้านค้า', 'ดั่งใจเบเกอรี่'],
+            datasets: [{
+                label: 'รายได้รวม',
+                data: [coopTotal, djTotal],
+                backgroundColor: ['rgba(102,126,234,0.6)', 'rgba(72,187,120,0.6)'],
+                borderColor: ['#667eea', '#48bb78'],
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#8b97b0', font: { family: 'Prompt' } }, grid: { display: false } },
+                y: { ticks: { color: '#5a6478', callback: v => '฿' + v.toLocaleString() }, grid: { color: 'rgba(99,115,146,0.1)' } }
+            }
+        }
+    });
+}
+
+// HISTORY / QUERY
+async function queryHistory() {
+    const from = document.getElementById('query-from').value;
+    const to = document.getElementById('query-to').value;
+    const unit = document.getElementById('query-unit').value;
+    const container = document.getElementById('history-results');
+
+    if (!from || !to) {
+        showToast('กรุณาเลือกช่วงวันที่', 'error');
+        return;
+    }
+
+    if (gasUrl) {
+        showToast('กำลังดึงข้อมูลจาก Google Sheets...', 'info');
+        await syncFromCloud();
+    }
+
+    const dates = Object.keys(allReports).filter(d => d >= from && d <= to).sort();
+
+    if (dates.length === 0) {
+        container.innerHTML = `<p style="text-align:center; padding:40px 0; color:var(--color-text-muted);">ไม่พบรายงานในช่วงวันที่ที่เลือก</p>`;
+        return;
+    }
+
+    let html = `<table class="history-table">
+        <thead><tr>
+            <th>วันที่</th><th>สถานะ</th>
+            ${unit !== 'DUNGJAI' ? '<th>สหกรณ์ (รายได้)</th><th>สหกรณ์ (ค่าใช้จ่าย)</th>' : ''}
+            ${unit !== 'COOP' ? '<th>ดั่งใจ (รายได้)</th><th>ดั่งใจ (ค่าใช้จ่าย)</th>' : ''}
+            <th>กำไรสุทธิ</th><th>การดำเนินการ</th>
+        </tr></thead><tbody>`;
+
+    let grandCoopRev = 0, grandCoopExp = 0, grandDjRev = 0, grandDjExp = 0;
+
+    dates.forEach(date => {
+        const r = allReports[date];
+        const d = r.data || {};
+        let coopRev = 0, coopExp = 0, djRev = 0, djExp = 0;
+
+        categories.revenue.forEach(item => {
+            coopRev += (d[`${item.id}_COOP_REV`] || 0);
+            djRev += (d[`${item.id}_DJ_REV`] || 0);
+        });
+        categories.operatingExpense.forEach(item => {
+            coopExp += (d[`${item.id}_COOP_EXP`] || 0);
+            djExp += (d[`${item.id}_DJ_EXP`] || 0);
+        });
+        categories.cogs.forEach(item => {
+            coopExp += (d[`${item.id}_COOP_EXP`] || 0);
+            djExp += (d[`${item.id}_DJ_EXP`] || 0);
+        });
+        categories.tradePayable.forEach(item => {
+            coopExp += (d[`${item.id}_COOP_EXP`] || 0);
+        });
+
+        grandCoopRev += coopRev;
+        grandCoopExp += coopExp;
+        grandDjRev += djRev;
+        grandDjExp += djExp;
+
+        const net = (coopRev + djRev) - (coopExp + djExp);
+        const statusBadge = r.status === 'VERIFIED' ? 'badge-verified' : r.status === 'SUBMITTED' ? 'badge-submitted' : 'badge-draft';
+        const statusText = r.status === 'VERIFIED' ? '✅ ตรวจสอบ' : r.status === 'SUBMITTED' ? '📤 ส่งแล้ว' : '📝 ร่าง';
+
+        html += `<tr>
+            <td>${formatThaiDate(date)}</td>
+            <td><span class="badge ${statusBadge}">${statusText}</span></td>
+            ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(coopRev)}</td><td class="currency negative">${formatNumber(coopExp)}</td>` : ''}
+            ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(djRev)}</td><td class="currency negative">${formatNumber(djExp)}</td>` : ''}
+            <td class="currency" style="color:${net >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:700;">${formatNumber(net)}</td>
+            <td>
+                <button class="btn btn-ghost btn-sm" onclick="loadAndEditReport('${date}')"><i class="fas fa-pen"></i></button>
+                <button class="btn btn-ghost btn-sm" onclick="viewReportFromHistory('${date}')"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--color-expense);" onclick="deleteReport('${date}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+
+    const totalNet = (grandCoopRev + grandDjRev) - (grandCoopExp + grandDjExp);
+    html += `<tr style="font-weight:700; background:var(--color-primary-bg);">
+        <td>รวม ${dates.length} วัน</td><td></td>
+        ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(grandCoopRev)}</td><td class="currency negative">${formatNumber(grandCoopExp)}</td>` : ''}
+        ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(grandDjRev)}</td><td class="currency negative">${formatNumber(grandDjExp)}</td>` : ''}
+        <td class="currency" style="color:${totalNet >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'};">${formatNumber(totalNet)}</td>
+        <td></td>
+    </tr>`;
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
+function loadAndEditReport(dateStr) {
+    document.getElementById('report-date').value = dateStr;
+    loadReportForDate(dateStr);
+    switchTab('tab-entry', document.querySelector('.nav-item[data-tab="tab-entry"]'));
+}
+
+function viewReportFromHistory(dateStr) {
+    document.getElementById('view-report-date').value = dateStr;
+    loadReportView();
+    switchTab('tab-report', document.querySelector('.nav-item[data-tab="tab-report"]'));
+}
+
+async function deleteReport(dateStr) {
+    if (confirm(`ต้องการลบรายงานวันที่ ${formatThaiDate(dateStr)} หรือไม่?`)) {
+        delete allReports[dateStr];
+        saveAllReports();
+
+        if (gasUrl) {
+            try {
+                await fetch(gasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'deleteReport', date: dateStr })
+                });
+            } catch (err) {}
+        }
+
+        queryHistory();
+        showToast('ลบรายงานเรียบร้อย', 'info');
+    }
+}
+
+// GOOGLE SHEETS SYNC & SETTINGS
+function saveGasUrl() {
+    const url = document.getElementById('gas-url-input').value.trim();
+    gasUrl = url;
+    localStorage.setItem(GAS_URL_KEY, url);
+    updateCloudStatusBadge();
+
+    if (url) {
+        showToast('บันทึก Web App URL แล้ว กำลังทดสอบ...', 'info');
+        testGasConnection();
+    } else {
+        showToast('ลบการเชื่อมต่อ Google Sheets แล้ว (สลับเป็น Local Storage)', 'info');
+    }
+}
+
+async function testGasConnection() {
+    const statusDiv = document.getElementById('gas-status-message');
+    if (!gasUrl) {
+        statusDiv.innerHTML = `<span style="color:var(--color-warning);"><i class="fas fa-circle-exclamation"></i> กรุณากรอก Web App URL ก่อน</span>`;
+        return;
+    }
+
+    statusDiv.innerHTML = `<span style="color:var(--color-info);"><i class="fas fa-spinner fa-spin"></i> กำลังทดสอบเชื่อมต่อ...</span>`;
+
+    try {
+        const res = await fetch(`${gasUrl}?action=ping`);
+        const data = await res.json();
+        if (data.status === 'success') {
+            statusDiv.innerHTML = `<span style="color:var(--color-success); font-weight:600;"><i class="fas fa-circle-check"></i> เชื่อมต่อ Google Sheets สำเร็จ! (${data.message})</span>`;
+            showToast('เชื่อมต่อ Google Sheets สำเร็จ!', 'success');
+            syncFromCloud();
+        } else {
+            statusDiv.innerHTML = `<span style="color:var(--color-danger);"><i class="fas fa-circle-xmark"></i> ตอบกลับผิดพลาด: ${data.message}</span>`;
+        }
+    } catch (err) {
+        statusDiv.innerHTML = `<span style="color:var(--color-danger);"><i class="fas fa-triangle-exclamation"></i> เชื่อมต่อไม่สำเร็จ: กรุณาตรวจสอบ Web App URL และสิทธิ์การใช้งาน (Anyone)</span>`;
+    }
+}
+
+async function syncFromCloud() {
+    if (!gasUrl) return;
+    try {
+        const res = await fetch(`${gasUrl}?action=listReports`);
+        const result = await res.json();
+        if (result.status === 'success' && Array.isArray(result.data)) {
+            for (const item of result.data) {
+                const detailRes = await fetch(`${gasUrl}?action=getReport&date=${item.date}`);
+                const detailData = await detailRes.json();
+                if (detailData.status === 'success' && detailData.data) {
+                    allReports[item.date] = detailData.data;
+                }
+            }
+            saveAllReports();
+            showToast(`ซิงค์ข้อมูลจาก Google Sheets เรียบร้อย (${result.data.length} รายการ)`, 'success');
+        }
+    } catch (err) {
+        console.warn('Sync error:', err);
+    }
+}
+
+function updateCloudStatusBadge() {
+    const badge = document.getElementById('sidebar-cloud-status');
+    if (gasUrl) {
+        badge.className = 'cloud-badge connected mb-xs';
+        badge.innerHTML = `<i class="fab fa-google-drive"></i> Google Sheets Connected`;
+    } else {
+        badge.className = 'cloud-badge disconnected mb-xs';
+        badge.innerHTML = `<i class="fas fa-database"></i> Local Storage Only`;
+    }
+}
+
+function renderSettingsPanel() {
+    const container = document.getElementById('settings-categories');
+    const sections = [
+        { key: 'revenue', label: 'รายได้ (Revenue)', icon: 'fa-arrow-trend-up', color: 'var(--color-revenue)' },
+        { key: 'operatingExpense', label: 'ค่าใช้จ่ายดำเนินการ (Operating Expense)', icon: 'fa-arrow-trend-down', color: 'var(--color-expense)' },
+        { key: 'cogs', label: 'ต้นทุนสินค้า (COGS)', icon: 'fa-box-open', color: 'var(--color-warning)' },
+        { key: 'tradePayable', label: 'เจ้าหนี้การค้า (Trade Payable)', icon: 'fa-handshake', color: 'var(--color-expense)' },
+        { key: 'paymentChannels', label: 'ช่องทางชำระเงิน (Payment Channels)', icon: 'fa-wallet', color: 'var(--color-info)' }
+    ];
+
+    let html = '';
+    sections.forEach(sec => {
+        html += `<div class="card mb-lg">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas ${sec.icon}" style="color:${sec.color};"></i> ${sec.label}</h3>
+            </div>
+            <table class="history-table" style="font-size:0.78rem;">
+                <thead><tr><th>รหัส</th><th>ชื่อรายการ</th><th>แหล่งข้อมูล</th><th>หน่วยงาน</th></tr></thead>
+                <tbody>`;
+        (categories[sec.key] || []).forEach(item => {
+            html += `<tr>
+                <td><code style="color:var(--color-text-accent); font-size:0.72rem;">${item.id}</code></td>
+                <td>${item.name}</td>
+                <td class="text-muted">${item.source || '—'}</td>
+                <td>${(item.units || []).join(', ')}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div>`;
+    });
+
+    html += `<div class="card mb-lg">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-user-tag" style="color:var(--color-warning);"></i> ลูกหนี้เริ่มต้น (Default Debtors)</h3>
+        </div>
+        <p style="color:var(--color-text-muted); font-size:0.82rem;">
+            ${categories.defaultDebtors.map(d => d.name).join(', ') || 'ไม่มีรายชื่อเริ่มต้น'}
+        </p>
+    </div>`;
+
+    container.innerHTML = html;
+}
+
+function exportAllData() {
+    const data = { exportDate: new Date().toISOString(), categories: categories, reports: allReports };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sbac_diary_export_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('ส่งออกข้อมูลสำเร็จ', 'success');
+}
+
+function importAllData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.categories) { categories = data.categories; saveCategories(); }
+            if (data.reports) { allReports = { ...allReports, ...data.reports }; saveAllReports(); }
+            buildEntryTable();
+            renderSettingsPanel();
+            showToast(`นำเข้าข้อมูลสำเร็จ (${Object.keys(data.reports || {}).length} รายงาน)`, 'success');
+        } catch (err) {
+            showToast('ไม่สามารถอ่านไฟล์ได้: ' + err.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function resetToDefaults() {
+    if (confirm('ต้องการคืนค่าหมวดหมู่เป็นค่าเริ่มต้นหรือไม่? (ข้อมูลรายงานจะไม่ถูกลบ)')) {
+        categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+        saveCategories();
+        buildEntryTable();
+        renderSettingsPanel();
+        showToast('คืนค่าหมวดหมู่เป็นค่าเริ่มต้นแล้ว', 'info');
+    }
+}
+
+function clearForm() {
+    if (confirm('ต้องการล้างข้อมูลทั้งหมดในฟอร์มหรือไม่?')) {
+        document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
+        recalculate();
+        showToast('ล้างข้อมูลฟอร์มเรียบร้อย', 'info');
+    }
+}
+
+function exportPDF() {
+    const printHeader = document.getElementById('print-report-header');
+    const dateStr = document.getElementById('report-date').value;
+    document.getElementById('print-date-display').textContent = formatThaiDate(dateStr);
+    printHeader.style.display = 'block';
+
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => { printHeader.style.display = 'none'; }, 500);
+    }, 100);
+}
+
+function printReport() {
+    switchTab('tab-report', document.querySelector('.nav-item[data-tab="tab-report"]'));
+    setTimeout(() => window.print(), 200);
+}
+
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                     'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+function formatThaiDate(dateStr) {
+    const d = new Date(dateStr);
+    return `วันที่ ${d.getDate()} เดือน ${THAI_MONTHS[d.getMonth()]} พ.ศ. ${d.getFullYear() + 543}`;
+}
+
+function formatShortDate(dateStr) {
+    const d = new Date(dateStr);
+    return `${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+function loadAllReports() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+
+function saveAllReports() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allReports));
+}
+
+function loadCategories() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(CATEGORIES_KEY));
+        return stored || JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    } catch {
+        return JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+    }
+}
+
+function saveCategories() {
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(40px)';
+        toast.style.transition = 'all 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+</script>
+</body>
+</html>
