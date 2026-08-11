@@ -32,19 +32,59 @@ var SHEET_PAYMENT_CHANNELS = "PaymentChannels";
 var SHEET_CONFIG           = "Config";
 
 // ================================================================
+// DATE NORMALIZER HELPER
+// ================================================================
+
+/**
+ * Normalizes any date value (Date object, "14/07/2026", "2026-07-14", "Tue Jul 14...")
+ * into standard ISO "YYYY-MM-DD" string format.
+ */
+function normalizeDateStr(val) {
+  if (!val) return "";
+
+  // 1. If it's a native Apps Script Date object
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    var yyyy = val.getFullYear();
+    var mm = String(val.getMonth() + 1); if (mm.length < 2) mm = "0" + mm;
+    var dd = String(val.getDate());       if (dd.length < 2) dd = "0" + dd;
+    return yyyy + "-" + mm + "-" + dd;
+  }
+
+  var str = String(val).trim();
+  if (!str) return "";
+
+  // 2. If already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+  // 3. If DD/MM/YYYY or DD-MM-YYYY
+  var dmyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    var d = String(dmyMatch[1]); if (d.length < 2) d = "0" + d;
+    var m = String(dmyMatch[2]); if (m.length < 2) m = "0" + m;
+    var y = Number(dmyMatch[3]);
+    if (y > 2400) y = y - 543; // Convert Thai BE to AD
+    return y + "-" + m + "-" + d;
+  }
+
+  // 4. Try parsing general date string
+  var parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    var yyyy = parsed.getFullYear();
+    var mm = String(parsed.getMonth() + 1); if (mm.length < 2) mm = "0" + mm;
+    var dd = String(parsed.getDate());       if (dd.length < 2) dd = "0" + dd;
+    return yyyy + "-" + mm + "-" + dd;
+  }
+
+  return str;
+}
+
+// ================================================================
 // HTTP HANDLERS
 // ================================================================
 
 /**
  * Handle GET requests
- * 
- * Supported actions:
- *   ?action=getReport&date=YYYY-MM-DD       → Get single report by date
- *   ?action=listReports                      → List all report headers
- *   ?action=queryReports&from=...&to=...     → Query reports in date range
- *   ?action=getConfig                        → Get categories/settings
- *   ?action=ping                             → Health check & return Sheet URL
- *   (default)                                → List all reports
  */
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || "listReports";
@@ -65,8 +105,8 @@ function doGet(e) {
         break;
 
       case "getReport":
-        var date = e.parameter.date;
-        if (!date) throw new Error("Missing 'date' parameter.");
+        var date = normalizeDateStr(e.parameter.date);
+        if (!date) throw new Error("Missing or invalid 'date' parameter.");
         response = { status: "success", data: getReportByDate(date), spreadsheetUrl: ssUrl };
         break;
 
@@ -75,8 +115,8 @@ function doGet(e) {
         break;
 
       case "queryReports":
-        var from = e.parameter.from || "";
-        var to   = e.parameter.to   || "";
+        var from = normalizeDateStr(e.parameter.from || "");
+        var to   = normalizeDateStr(e.parameter.to   || "");
         var unit = e.parameter.unit || "ALL";
         response = { status: "success", data: queryReports(from, to, unit), spreadsheetUrl: ssUrl };
         break;
@@ -98,11 +138,6 @@ function doGet(e) {
 
 /**
  * Handle POST requests
- * 
- * Supported actions (in JSON body):
- *   { action: "saveReport",   report: {...} }   → Save/update a daily report
- *   { action: "deleteReport", date: "..." }     → Delete a report by date
- *   { action: "saveConfig",   config: {...} }   → Save categories config
  */
 function doPost(e) {
   var response = {};
@@ -120,8 +155,9 @@ function doPost(e) {
         break;
 
       case "deleteReport":
-        deleteReport(postData.date);
-        response = { status: "success", message: "ลบรายงานวันที่ " + postData.date + " เรียบร้อย", spreadsheetUrl: ssUrl };
+        var targetDate = normalizeDateStr(postData.date);
+        deleteReport(targetDate);
+        response = { status: "success", message: "ลบรายงานวันที่ " + targetDate + " เรียบร้อย", spreadsheetUrl: ssUrl };
         break;
 
       case "saveConfig":
@@ -189,16 +225,17 @@ function ensureSheetsExist() {
 
 function saveReport(report) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var date = report.date;
+  var date = normalizeDateStr(report.date);
 
-  if (!date) throw new Error("Missing report date.");
+  if (!date) throw new Error("Missing or invalid report date.");
 
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
   var existingRow = -1;
 
   for (var i = 1; i < headerData.length; i++) {
-    if (String(headerData[i][0]).trim() === date) {
+    var d = normalizeDateStr(headerData[i][0]);
+    if (d === date) {
       existingRow = i + 1;
       break;
     }
@@ -206,6 +243,7 @@ function saveReport(report) {
 
   var now = new Date().toISOString();
   if (existingRow > 0) {
+    headerSheet.getRange(existingRow, 1).setValue(date);
     headerSheet.getRange(existingRow, 2).setValue(report.status || "DRAFT");
     headerSheet.getRange(existingRow, 3).setValue(now);
   } else {
@@ -301,15 +339,18 @@ function saveReport(report) {
 // GET REPORT BY DATE
 // ================================================================
 
-function getReportByDate(date) {
+function getReportByDate(targetDateStr) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var date = normalizeDateStr(targetDateStr);
+  if (!date) return null;
 
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
   var report = null;
 
   for (var i = 1; i < headerData.length; i++) {
-    if (String(headerData[i][0]).trim() === date) {
+    var d = normalizeDateStr(headerData[i][0]);
+    if (d === date) {
       report = {
         date: date,
         status: headerData[i][1],
@@ -327,7 +368,8 @@ function getReportByDate(date) {
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
   var linesData = linesSheet.getDataRange().getValues();
   for (var i = 1; i < linesData.length; i++) {
-    if (String(linesData[i][0]).trim() === date) {
+    var d = normalizeDateStr(linesData[i][0]);
+    if (d === date) {
       var itemId = linesData[i][1];
       var group = linesData[i][2];
       var coopRev = Number(linesData[i][3]) || 0;
@@ -348,7 +390,8 @@ function getReportByDate(date) {
   var debtorSheet = ss.getSheetByName(SHEET_DEBTORS);
   var debtorData = debtorSheet.getDataRange().getValues();
   for (var i = 1; i < debtorData.length; i++) {
-    if (String(debtorData[i][0]).trim() === date) {
+    var d = normalizeDateStr(debtorData[i][0]);
+    if (d === date) {
       report.debtors.push({
         name: debtorData[i][1],
         coopRev: Number(debtorData[i][2]) || 0,
@@ -360,7 +403,8 @@ function getReportByDate(date) {
   var paySheet = ss.getSheetByName(SHEET_PAYMENT_CHANNELS);
   var payData = paySheet.getDataRange().getValues();
   for (var i = 1; i < payData.length; i++) {
-    if (String(payData[i][0]).trim() === date) {
+    var d = normalizeDateStr(payData[i][0]);
+    if (d === date) {
       var channelId = payData[i][1];
       var coopAmt = Number(payData[i][2]) || 0;
       var djAmt   = Number(payData[i][3]) || 0;
@@ -383,7 +427,7 @@ function listAllReports() {
   var reports = [];
 
   for (var i = 1; i < data.length; i++) {
-    var date = String(data[i][0]).trim();
+    var date = normalizeDateStr(data[i][0]);
     if (!date) continue;
     reports.push({
       date: date,
@@ -403,16 +447,18 @@ function listAllReports() {
 
 function queryReports(from, to, unit) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var normFrom = normalizeDateStr(from);
+  var normTo   = normalizeDateStr(to);
 
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
   var datesInRange = {};
 
   for (var i = 1; i < headerData.length; i++) {
-    var date = String(headerData[i][0]).trim();
+    var date = normalizeDateStr(headerData[i][0]);
     if (!date) continue;
-    if (from && date < from) continue;
-    if (to && date > to) continue;
+    if (normFrom && date < normFrom) continue;
+    if (normTo   && date > normTo) continue;
     datesInRange[date] = {
       date: date,
       status: headerData[i][1] || "DRAFT",
@@ -425,7 +471,7 @@ function queryReports(from, to, unit) {
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
   var linesData = linesSheet.getDataRange().getValues();
   for (var i = 1; i < linesData.length; i++) {
-    var date = String(linesData[i][0]).trim();
+    var date = normalizeDateStr(linesData[i][0]);
     if (!datesInRange[date]) continue;
     var group = linesData[i][2];
 
@@ -447,7 +493,8 @@ function queryReports(from, to, unit) {
 // DELETE REPORT
 // ================================================================
 
-function deleteReport(date) {
+function deleteReport(targetDateStr) {
+  var date = normalizeDateStr(targetDateStr);
   if (!date) throw new Error("Missing date to delete.");
   clearRowsByDate(SHEET_DAILY_REPORTS, date);
   clearRowsByDate(SHEET_REPORT_LINES, date);
@@ -496,14 +543,16 @@ function saveConfig(config) {
   }
 }
 
-function clearRowsByDate(sheetName, date) {
+function clearRowsByDate(sheetName, targetDateStr) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return;
 
+  var date = normalizeDateStr(targetDateStr);
   var data = sheet.getDataRange().getValues();
   for (var i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][0]).trim() === date) {
+    var rowDate = normalizeDateStr(data[i][0]);
+    if (rowDate === date) {
       sheet.deleteRow(i + 1);
     }
   }
