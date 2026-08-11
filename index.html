@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,43 +21,43 @@
            ================================================================ */
 
         :root {
-            /* --- Color Palette --- */
-            --color-bg: #0f1117;
-            --color-surface: #181b25;
-            --color-surface-elevated: #1e2230;
-            --color-surface-glass: rgba(30, 34, 48, 0.75);
-            --color-border: rgba(99, 115, 146, 0.18);
-            --color-border-highlight: rgba(99, 179, 237, 0.28);
+            /* --- LIGHT THEME (DEFAULT) --- */
+            --color-bg: #f4f6f9;
+            --color-surface: #ffffff;
+            --color-surface-elevated: #f8fafc;
+            --color-surface-glass: rgba(255, 255, 255, 0.90);
+            --color-border: #e2e8f0;
+            --color-border-highlight: #cbd5e1;
 
-            --color-text-primary: #e8ecf4;
-            --color-text-secondary: #8b97b0;
-            --color-text-muted: #5a6478;
-            --color-text-accent: #63b3ed;
+            --color-text-primary: #0f172a;
+            --color-text-secondary: #334155;
+            --color-text-muted: #64748b;
+            --color-text-accent: #2563eb;
 
             /* Revenue / Income tones */
-            --color-revenue: #48bb78;
-            --color-revenue-bg: rgba(72, 187, 120, 0.08);
-            --color-revenue-glow: rgba(72, 187, 120, 0.25);
+            --color-revenue: #15803d;
+            --color-revenue-bg: rgba(21, 128, 61, 0.08);
+            --color-revenue-glow: rgba(21, 128, 61, 0.2);
 
             /* Expense tones */
-            --color-expense: #fc8181;
-            --color-expense-bg: rgba(252, 129, 129, 0.08);
-            --color-expense-glow: rgba(252, 129, 129, 0.25);
+            --color-expense: #dc2626;
+            --color-expense-bg: rgba(220, 38, 38, 0.08);
+            --color-expense-glow: rgba(220, 38, 38, 0.2);
 
             /* Accent / Primary */
-            --color-primary: #667eea;
-            --color-primary-hover: #7c94f4;
-            --color-primary-bg: rgba(102, 126, 234, 0.10);
-            --color-primary-glow: rgba(102, 126, 234, 0.3);
+            --color-primary: #3b82f6;
+            --color-primary-hover: #2563eb;
+            --color-primary-bg: rgba(59, 130, 246, 0.08);
+            --color-primary-glow: rgba(59, 130, 246, 0.25);
 
             /* Warning / Discrepancy */
-            --color-warning: #ecc94b;
-            --color-warning-bg: rgba(236, 201, 75, 0.1);
+            --color-warning: #d97706;
+            --color-warning-bg: rgba(217, 119, 6, 0.1);
 
             /* Status */
-            --color-success: #48bb78;
-            --color-danger: #fc8181;
-            --color-info: #63b3ed;
+            --color-success: #16a34a;
+            --color-danger: #dc2626;
+            --color-info: #2563eb;
 
             /* --- Typography --- */
             --font-display: 'Prompt', sans-serif;
@@ -83,6 +83,40 @@
             --duration-normal: 250ms;
         }
 
+        [data-theme="dark"] {
+            --color-bg: #0f1117;
+            --color-surface: #181b25;
+            --color-surface-elevated: #1e2230;
+            --color-surface-glass: rgba(30, 34, 48, 0.75);
+            --color-border: rgba(99, 115, 146, 0.18);
+            --color-border-highlight: rgba(99, 179, 237, 0.28);
+
+            --color-text-primary: #e8ecf4;
+            --color-text-secondary: #8b97b0;
+            --color-text-muted: #5a6478;
+            --color-text-accent: #63b3ed;
+
+            --color-revenue: #48bb78;
+            --color-revenue-bg: rgba(72, 187, 120, 0.08);
+            --color-revenue-glow: rgba(72, 187, 120, 0.25);
+
+            --color-expense: #fc8181;
+            --color-expense-bg: rgba(252, 129, 129, 0.08);
+            --color-expense-glow: rgba(252, 129, 129, 0.25);
+
+            --color-primary: #667eea;
+            --color-primary-hover: #7c94f4;
+            --color-primary-bg: rgba(102, 126, 234, 0.10);
+            --color-primary-glow: rgba(102, 126, 234, 0.3);
+
+            --color-warning: #ecc94b;
+            --color-warning-bg: rgba(236, 201, 75, 0.1);
+
+            --color-success: #48bb78;
+            --color-danger: #fc8181;
+            --color-info: #63b3ed;
+        }
+
         /* ================================================================
            RESET & BASE
            ================================================================ */
@@ -104,8 +138,8 @@
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(ellipse 800px 600px at 20% 10%, rgba(102,126,234,0.06), transparent),
-                radial-gradient(ellipse 600px 400px at 80% 90%, rgba(72,187,120,0.04), transparent);
+                radial-gradient(ellipse 800px 600px at 20% 10%, rgba(59,130,246,0.03), transparent),
+                radial-gradient(ellipse 600px 400px at 80% 90%, rgba(22,163,74,0.03), transparent);
             pointer-events: none;
             z-index: 0;
         }
@@ -140,6 +174,7 @@
             bottom: 0;
             z-index: 100;
             transition: transform var(--duration-normal) var(--ease-smooth);
+            box-shadow: 2px 0 12px rgba(0,0,0,0.03);
         }
 
         .sidebar-brand {
@@ -192,12 +227,13 @@
         }
         .nav-item:hover {
             background: var(--color-primary-bg);
-            color: var(--color-text-primary);
+            color: var(--color-primary);
         }
         .nav-item.active {
             background: var(--color-primary-bg);
             color: var(--color-primary);
             box-shadow: inset 3px 0 0 var(--color-primary);
+            font-weight: 600;
         }
         .nav-item i { width: 18px; text-align: center; font-size: 0.9rem; }
 
@@ -227,6 +263,7 @@
             position: sticky;
             top: 0;
             z-index: 50;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
         }
         .top-bar-left {
             display: flex;
@@ -269,11 +306,13 @@
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
             padding: var(--space-lg);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
             transition: border-color var(--duration-normal) var(--ease-smooth),
                         box-shadow var(--duration-normal) var(--ease-smooth);
         }
         .card:hover {
             border-color: var(--color-border-highlight);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
         }
         .card-header {
             display: flex;
@@ -305,12 +344,13 @@
             padding: var(--space-lg);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             transition: all var(--duration-normal) var(--ease-smooth);
         }
         .stat-card:hover {
             transform: translateY(-2px);
             border-color: var(--color-border-highlight);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
         }
         .stat-card::before {
             content: '';
@@ -414,7 +454,7 @@
             user-select: none;
         }
         .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary), #805ad5);
+            background: linear-gradient(135deg, var(--color-primary), #2563eb);
             color: white;
             box-shadow: 0 2px 8px var(--color-primary-glow);
         }
@@ -423,12 +463,12 @@
             box-shadow: 0 4px 16px var(--color-primary-glow);
         }
         .btn-success {
-            background: linear-gradient(135deg, var(--color-revenue), #38a169);
+            background: linear-gradient(135deg, var(--color-revenue), #16a34a);
             color: white;
         }
         .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 16px var(--color-revenue-glow); }
         .btn-danger {
-            background: linear-gradient(135deg, var(--color-expense), #e53e3e);
+            background: linear-gradient(135deg, var(--color-expense), #dc2626);
             color: white;
         }
         .btn-danger:hover { transform: translateY(-1px); }
@@ -455,6 +495,7 @@
             overflow-x: auto;
             border-radius: var(--radius-md);
             border: 1px solid var(--color-border);
+            background: var(--color-surface);
         }
         .report-table {
             width: 100%;
@@ -465,8 +506,8 @@
         .report-table th {
             background: var(--color-surface-elevated);
             color: var(--color-text-secondary);
-            font-weight: 600;
-            font-size: 0.75rem;
+            font-weight: 700;
+            font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             padding: 10px 12px;
@@ -481,42 +522,47 @@
             padding: 6px 8px;
             border-bottom: 1px solid var(--color-border);
             vertical-align: middle;
+            color: var(--color-text-primary);
         }
         .report-table tr:hover td {
-            background: rgba(102,126,234,0.03);
+            background: rgba(59,130,246,0.03);
         }
 
         .report-table .section-header td {
             background: var(--color-surface-elevated);
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 0.82rem;
+            font-size: 0.84rem;
             color: var(--color-text-primary);
             padding: 10px 12px;
             border-bottom: 2px solid var(--color-border);
         }
         .report-table .section-header.revenue-section td {
-            border-left: 3px solid var(--color-revenue);
+            border-left: 4px solid var(--color-revenue);
             color: var(--color-revenue);
+            background: var(--color-revenue-bg);
         }
         .report-table .section-header.expense-section td {
-            border-left: 3px solid var(--color-expense);
+            border-left: 4px solid var(--color-expense);
             color: var(--color-expense);
+            background: var(--color-expense-bg);
         }
         .report-table .section-header.deduct-section td {
-            border-left: 3px solid var(--color-warning);
+            border-left: 4px solid var(--color-warning);
             color: var(--color-warning);
+            background: var(--color-warning-bg);
         }
         .report-table .section-header.payment-section td {
-            border-left: 3px solid var(--color-info);
+            border-left: 4px solid var(--color-info);
             color: var(--color-info);
+            background: var(--color-primary-bg);
         }
 
         .report-table .subtotal-row td {
             font-weight: 700;
             border-top: 2px solid var(--color-border);
             border-bottom: 2px solid var(--color-border);
-            background: rgba(102,126,234,0.04);
+            background: var(--color-surface-elevated);
         }
         .report-table .grand-total-row td {
             font-family: var(--font-display);
@@ -527,7 +573,7 @@
             background: var(--color-primary-bg);
         }
         .report-table .grand-total-row#net-profit-row td {
-            background: rgba(72, 187, 120, 0.12);
+            background: rgba(21, 128, 61, 0.10);
             border-top: 3px double var(--color-revenue);
             border-bottom: 3px double var(--color-revenue);
             font-size: 0.95rem;
@@ -537,10 +583,11 @@
         .report-table .item-label {
             text-align: left;
             padding-left: 24px;
-            color: var(--color-text-secondary);
+            color: var(--color-text-primary);
+            font-weight: 500;
         }
         .report-table .source-note {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             color: var(--color-text-muted);
             font-style: italic;
         }
@@ -555,8 +602,11 @@
 
         .report-table .form-input {
             height: 32px;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             padding: 0 8px;
+            background: var(--color-surface);
+            border-color: var(--color-border);
+            color: var(--color-text-primary);
         }
 
         .col-item { width: 30%; }
@@ -578,12 +628,12 @@
         .reconcile-status.matched {
             background: var(--color-revenue-bg);
             color: var(--color-revenue);
-            border: 1px solid rgba(72,187,120,0.2);
+            border: 1px solid rgba(21,128,61,0.2);
         }
         .reconcile-status.discrepancy {
             background: var(--color-expense-bg);
             color: var(--color-expense);
-            border: 1px solid rgba(252,129,129,0.2);
+            border: 1px solid rgba(220,38,38,0.2);
             animation: pulse-warn 2s infinite;
         }
         @keyframes pulse-warn {
@@ -604,12 +654,12 @@
             border: 1px solid var(--color-border);
         }
         .cloud-badge.connected {
-            background: rgba(66, 133, 244, 0.12);
-            color: #63b3ed;
-            border-color: rgba(66, 133, 244, 0.3);
+            background: rgba(37, 99, 235, 0.1);
+            color: #2563eb;
+            border-color: rgba(37, 99, 235, 0.25);
         }
         .cloud-badge.disconnected {
-            background: rgba(139, 151, 176, 0.1);
+            background: rgba(100, 116, 139, 0.1);
             color: var(--color-text-muted);
         }
 
@@ -658,9 +708,10 @@
         .history-table td {
             padding: 10px 14px;
             border-bottom: 1px solid var(--color-border);
+            color: var(--color-text-primary);
         }
         .history-table tr:hover td {
-            background: rgba(102,126,234,0.04);
+            background: rgba(59,130,246,0.04);
         }
         .history-table .currency { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 
@@ -673,6 +724,7 @@
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
             margin-bottom: var(--space-xl);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         .date-control-bar .form-input {
             max-width: 200px;
@@ -726,14 +778,14 @@
         .toast {
             padding: 12px 20px;
             border-radius: var(--radius-md);
-            background: var(--color-surface-elevated);
+            background: var(--color-surface);
             border: 1px solid var(--color-border);
             color: var(--color-text-primary);
             font-size: 0.82rem;
             display: flex;
             align-items: center;
             gap: var(--space-sm);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
             animation: toastSlideIn 0.3s var(--ease-smooth);
             max-width: 400px;
         }
@@ -843,10 +895,10 @@
             <div id="sidebar-cloud-status" class="cloud-badge disconnected mb-xs" style="width:100%; justify-content:center;">
                 <i class="fas fa-database"></i> Local Storage Only
             </div>
-            <a id="sidebar-sheet-link" class="btn btn-ghost btn-sm hidden mt-xs" target="_blank" href="#" style="width:100%; justify-content:center; border-color: rgba(66, 133, 244, 0.4); color: #63b3ed; font-size:0.72rem;">
+            <a id="sidebar-sheet-link" class="btn btn-ghost btn-sm hidden mt-xs" target="_blank" href="#" style="width:100%; justify-content:center; border-color: rgba(37, 99, 235, 0.3); color: #2563eb; font-size:0.72rem;">
                 <i class="fab fa-google-drive"></i> เปิด Google Sheet
             </a>
-            <span style="font-size:0.65rem; margin-top:4px; display:block; text-align:center;">Version 1.9 — Debtor Revenue Fix</span>
+            <span style="font-size:0.65rem; margin-top:6px; display:block; text-align:center;">Version 2.0 — Light Theme Default</span>
         </div>
     </aside>
 
@@ -865,7 +917,10 @@
                 </div>
             </div>
             <div class="top-bar-right">
-                <a id="topbar-sheet-link" class="btn btn-ghost btn-sm hidden" target="_blank" href="#" style="border-color: rgba(66, 133, 244, 0.4); color: #63b3ed;">
+                <button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="theme-toggle-btn">
+                    <i class="fas fa-moon"></i> โหมดมืด
+                </button>
+                <a id="topbar-sheet-link" class="btn btn-ghost btn-sm hidden" target="_blank" href="#" style="border-color: rgba(37, 99, 235, 0.3); color: #2563eb;">
                     <i class="fab fa-google-drive"></i> เปิด Google Sheet
                 </a>
                 <button class="btn btn-ghost btn-sm" onclick="exportPDF()">
@@ -1087,7 +1142,7 @@
 
                     <!-- Direct Link to Google Sheet -->
                     <div id="settings-sheet-container" class="mt-md hidden">
-                        <a id="settings-sheet-link" class="btn btn-ghost btn-sm" target="_blank" href="#" style="border-color: #4285F4; color: #63b3ed; background: rgba(66,133,244,0.08);">
+                        <a id="settings-sheet-link" class="btn btn-ghost btn-sm" target="_blank" href="#" style="border-color: #4285F4; color: #2563eb; background: rgba(37,99,235,0.06);">
                             <i class="fab fa-google-drive" style="color: #4285F4;"></i> 📊 คลิกที่นี่เพื่อเปิด Google Spreadsheet (Master Database)
                         </a>
                     </div>
@@ -1139,6 +1194,27 @@ const STORAGE_KEY = 'sbac_diary_reports';
 const CATEGORIES_KEY = 'sbac_diary_categories';
 const GAS_URL_KEY = 'sbac_diary_gas_url';
 const SHEET_URL_KEY = 'sbac_diary_sheet_url';
+const THEME_KEY = 'sbac_diary_theme';
+
+// THEME TOGGLE
+function toggleTheme() {
+    const htmlEl = document.documentElement;
+    const currentTheme = htmlEl.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    htmlEl.setAttribute('data-theme', newTheme);
+    localStorage.setItem(THEME_KEY, newTheme);
+    updateThemeToggleBtn(newTheme);
+}
+
+function updateThemeToggleBtn(theme) {
+    const btn = document.getElementById('theme-toggle-btn');
+    if (!btn) return;
+    if (theme === 'dark') {
+        btn.innerHTML = `<i class="fas fa-sun" style="color:#ecc94b;"></i> โหมดสว่าง`;
+    } else {
+        btn.innerHTML = `<i class="fas fa-moon"></i> โหมดมืด`;
+    }
+}
 
 // DATE NORMALIZATION UTILITY
 function normalizeDateStr(val) {
@@ -1217,6 +1293,10 @@ let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || '';
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeToggleBtn(savedTheme);
+
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('report-date').value = today;
     document.getElementById('view-report-date').value = today;
@@ -1936,32 +2016,32 @@ function renderDashboard() {
                 {
                     label: 'รายได้รวม (รวมลูกหนี้)',
                     data: revByDate,
-                    borderColor: '#48bb78',
-                    backgroundColor: 'rgba(72,187,120,0.1)',
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22,163,74,0.1)',
                     fill: true,
                     tension: 0.35,
                     pointRadius: 4,
-                    pointBackgroundColor: '#48bb78'
+                    pointBackgroundColor: '#16a34a'
                 },
                 {
                     label: 'ค่าใช้จ่ายรวม',
                     data: expByDate,
-                    borderColor: '#fc8181',
-                    backgroundColor: 'rgba(252,129,129,0.1)',
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220,38,38,0.1)',
                     fill: true,
                     tension: 0.35,
                     pointRadius: 4,
-                    pointBackgroundColor: '#fc8181'
+                    pointBackgroundColor: '#dc2626'
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#8b97b0', font: { family: 'Prompt' } } } },
+            plugins: { legend: { labels: { color: 'var(--color-text-secondary)', font: { family: 'Prompt' } } } },
             scales: {
-                x: { ticks: { color: '#5a6478', font: { size: 10 } }, grid: { color: 'rgba(99,115,146,0.1)' } },
-                y: { ticks: { color: '#5a6478', callback: v => '฿' + v.toLocaleString() }, grid: { color: 'rgba(99,115,146,0.1)' } }
+                x: { ticks: { color: 'var(--color-text-muted)', font: { size: 10 } }, grid: { color: 'var(--color-border)' } },
+                y: { ticks: { color: 'var(--color-text-muted)', callback: v => '฿' + v.toLocaleString() }, grid: { color: 'var(--color-border)' } }
             }
         }
     });
@@ -1969,7 +2049,7 @@ function renderDashboard() {
     if (charts.payChannel) charts.payChannel.destroy();
     const payLabels = Object.keys(payChannelTotals);
     const payValues = Object.values(payChannelTotals);
-    const payColors = ['#667eea', '#48bb78', '#ecc94b', '#fc8181', '#63b3ed'];
+    const payColors = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#0284c7'];
     const ctx2 = document.getElementById('chart-payment-channels').getContext('2d');
     charts.payChannel = new Chart(ctx2, {
         type: 'doughnut',
@@ -1978,7 +2058,7 @@ function renderDashboard() {
             datasets: [{
                 data: payValues,
                 backgroundColor: payColors,
-                borderColor: '#181b25',
+                borderColor: 'var(--color-surface)',
                 borderWidth: 3
             }]
         },
@@ -1988,7 +2068,7 @@ function renderDashboard() {
             plugins: {
                 legend: {
                     position: 'right',
-                    labels: { color: '#8b97b0', font: { family: 'Prompt', size: 11 }, padding: 12 }
+                    labels: { color: 'var(--color-text-secondary)', font: { family: 'Prompt', size: 11 }, padding: 12 }
                 }
             }
         }
@@ -2015,8 +2095,8 @@ function renderDashboard() {
             datasets: [{
                 label: 'รายได้รวม',
                 data: [coopTotal, djTotal],
-                backgroundColor: ['rgba(102,126,234,0.6)', 'rgba(72,187,120,0.6)'],
-                borderColor: ['#667eea', '#48bb78'],
+                backgroundColor: ['rgba(37,99,235,0.6)', 'rgba(22,163,74,0.6)'],
+                borderColor: ['#2563eb', '#16a34a'],
                 borderWidth: 2,
                 borderRadius: 8
             }]
@@ -2026,8 +2106,8 @@ function renderDashboard() {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: '#8b97b0', font: { family: 'Prompt' } }, grid: { display: false } },
-                y: { ticks: { color: '#5a6478', callback: v => '฿' + v.toLocaleString() }, grid: { color: 'rgba(99,115,146,0.1)' } }
+                x: { ticks: { color: 'var(--color-text-secondary)', font: { family: 'Prompt' } }, grid: { display: false } },
+                y: { ticks: { color: 'var(--color-text-muted)', callback: v => '฿' + v.toLocaleString() }, grid: { color: 'var(--color-border)' } }
             }
         }
     });
@@ -2135,7 +2215,7 @@ async function queryHistory() {
         <td></td>
     </tr>`;
 
-    html += `</tbody></table>`;
+    html += `</tbody>mtable></div>`;
     container.innerHTML = html;
 }
 
