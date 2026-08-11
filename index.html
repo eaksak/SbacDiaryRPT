@@ -846,7 +846,7 @@
             <a id="sidebar-sheet-link" class="btn btn-ghost btn-sm hidden mt-xs" target="_blank" href="#" style="width:100%; justify-content:center; border-color: rgba(66, 133, 244, 0.4); color: #63b3ed; font-size:0.72rem;">
                 <i class="fab fa-google-drive"></i> เปิด Google Sheet
             </a>
-            <span style="font-size:0.65rem; margin-top:4px; display:block; text-align:center;">Version 1.8 — Net Profit Formula</span>
+            <span style="font-size:0.65rem; margin-top:4px; display:block; text-align:center;">Version 1.9 — Debtor Revenue Fix</span>
         </div>
     </aside>
 
@@ -1281,7 +1281,8 @@ function buildEntryTable() {
     categories.cogs.forEach(item => { html += entryRow(item, 'cogs'); });
     html += subtotalRow('subtotal-cogs', 'รวม');
 
-    html += sectionHeaderRow('หัก  ลูกหนี้ ขายเชื่อ', 'deduct-section', 'fa-user-tag');
+    // DEBTORS ARE REVENUE (CREDIT SALES), NOT EXPENSES
+    html += sectionHeaderRow('ลูกหนี้ ขายเชื่อ (รายได้)', 'revenue-section', 'fa-user-tag');
     html += `<tr id="debtor-rows-start"></tr>`;
     currentDebtors = [...categories.defaultDebtors];
     currentDebtors.forEach((d, i) => { html += debtorRow(d.name, i); });
@@ -1501,9 +1502,10 @@ function recalculate() {
     setCell('subtotal-payable_DJ_REV', 0);
     setCell('subtotal-payable_DJ_EXP', 0);
 
-    totalCoopExp = subOpexCoopExp + subCogsCoopExp + subDebtorCoopExp + subPayableCoopExp;
+    // TOTAL EXPENSES STRICTLY EXCLUDES DEBTORS (DEBTORS ARE REVENUE)
+    totalCoopExp = subOpexCoopExp + subCogsCoopExp + subPayableCoopExp;
     totalDjExp = subOpexDjExp + subCogsDjExp;
-    setCell('total-expense_COOP_REV', subDebtorCoopRev);
+    setCell('total-expense_COOP_REV', 0);
     setCell('total-expense_COOP_EXP', totalCoopExp);
     setCell('total-expense_DJ_REV', 0);
     setCell('total-expense_DJ_EXP', totalDjExp);
@@ -1532,7 +1534,7 @@ function recalculate() {
     setCell('net-profit-row_DJ_EXP', '');
     setCell('net-profit-row_COMBINED', netProfitCombined);
 
-    const grandRevenue = subCoopRev + subDjRev;
+    const grandRevenue = subCoopRev + subDjRev + subDebtorCoopRev;
     const grandExpense = totalCoopExp + totalDjExp;
     const paymentTotal = payCoopTotal + payDjTotal;
 
@@ -1768,7 +1770,7 @@ function loadReportView() {
 
     let sDebtRev = 0, sDebtExp = 0;
     if (report.debtors && report.debtors.length > 0) {
-        html += sectionHeaderRow('หัก  ลูกหนี้ ขายเชื่อ', 'deduct-section', 'fa-user-tag');
+        html += sectionHeaderRow('ลูกหนี้ ขายเชื่อ (รายได้)', 'revenue-section', 'fa-user-tag');
         report.debtors.forEach(deb => {
             sDebtRev += deb.coopRev || 0;
             sDebtExp += deb.coopExp || 0;
@@ -1795,6 +1797,7 @@ function loadReportView() {
              <td></td><td class="currency">${formatNumber(sPayableCoop)}</td>
              <td></td><td></td><td></td></tr>`;
 
+    // TOTAL EXPENSE EXCLUDES DEBTORS
     const totalExpCoop = sOpexCoop + sCogsCoop + sPayableCoop;
     const totalExpDj = sOpexDj + sCogsDj;
     html += `<tr class="grand-total-row"><td style="text-align:left;padding-left:12px;">รวมค่าใช้จ่าย</td>
@@ -1893,10 +1896,10 @@ function renderDashboard() {
             payChannelTotals[item.name] = (payChannelTotals[item.name] || 0) + v;
         });
 
-        totalRev += dayRev;
+        totalRev += (dayRev + dayDebtor);
         totalExp += dayExp;
         totalNetProfit += dayNetProfit;
-        revByDate.push(dayRev);
+        revByDate.push(dayRev + dayDebtor);
         expByDate.push(dayExp);
         labels.push(formatShortDate(date));
     });
@@ -1931,7 +1934,7 @@ function renderDashboard() {
             labels: labels,
             datasets: [
                 {
-                    label: 'รายได้',
+                    label: 'รายได้รวม (รวมลูกหนี้)',
                     data: revByDate,
                     borderColor: '#48bb78',
                     backgroundColor: 'rgba(72,187,120,0.1)',
@@ -1941,7 +1944,7 @@ function renderDashboard() {
                     pointBackgroundColor: '#48bb78'
                 },
                 {
-                    label: 'ค่าใช้จ่าย',
+                    label: 'ค่าใช้จ่ายรวม',
                     data: expByDate,
                     borderColor: '#fc8181',
                     backgroundColor: 'rgba(252,129,129,0.1)',
@@ -2000,12 +2003,15 @@ function renderDashboard() {
             coopTotal += (d[`${item.id}_COOP_REV`] || 0);
             djTotal += (d[`${item.id}_DJ_REV`] || 0);
         });
+        if (allReports[date].debtors) {
+            allReports[date].debtors.forEach(deb => { coopTotal += deb.coopRev || 0; });
+        }
     });
     const ctx3 = document.getElementById('chart-unit-compare').getContext('2d');
     charts.unitCompare = new Chart(ctx3, {
         type: 'bar',
         data: {
-            labels: ['สหกรณ์ร้านค้า', 'ดั่งใจเบเกอรี่'],
+            labels: ['สหกรณ์ร้านค้า (รวมลูกหนี้)', 'ดั่งใจเบเกอรี่'],
             datasets: [{
                 label: 'รายได้รวม',
                 data: [coopTotal, djTotal],
@@ -2090,6 +2096,7 @@ async function queryHistory() {
             r.debtors.forEach(deb => { coopDebtor += deb.coopRev || 0; });
         }
 
+        const coopTotalRevWithDebtor = coopRev + coopDebtor;
         const coopExp = coopOpex + coopCogs + coopPayable;
         const djExp = djOpex + djCogs;
 
@@ -2097,7 +2104,7 @@ async function queryHistory() {
         const netProfitDj   = djRev - djOpex - djCogs;
         const netProfitDay  = netProfitCoop + netProfitDj;
 
-        grandCoopRev += coopRev;
+        grandCoopRev += coopTotalRevWithDebtor;
         grandCoopExp += coopExp;
         grandDjRev += djRev;
         grandDjExp += djExp;
@@ -2109,7 +2116,7 @@ async function queryHistory() {
         html += `<tr>
             <td>${formatThaiDate(date)}</td>
             <td><span class="badge ${statusBadge}">${statusText}</span></td>
-            ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(coopRev)}</td><td class="currency negative">${formatNumber(coopExp)}</td>` : ''}
+            ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(coopTotalRevWithDebtor)}</td><td class="currency negative">${formatNumber(coopExp)}</td>` : ''}
             ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(djRev)}</td><td class="currency negative">${formatNumber(djExp)}</td>` : ''}
             <td class="currency" style="color:${netProfitDay >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:700;">${formatNumber(netProfitDay)}</td>
             <td>
