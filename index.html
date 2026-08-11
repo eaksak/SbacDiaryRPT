@@ -526,6 +526,13 @@
             border-bottom: 3px double var(--color-primary);
             background: var(--color-primary-bg);
         }
+        .report-table .grand-total-row#net-profit-row td {
+            background: rgba(72, 187, 120, 0.12);
+            border-top: 3px double var(--color-revenue);
+            border-bottom: 3px double var(--color-revenue);
+            font-size: 0.95rem;
+            color: var(--color-revenue);
+        }
 
         .report-table .item-label {
             text-align: left;
@@ -786,6 +793,7 @@
             .report-table td { border-color: #ddd !important; }
             .report-table .section-header td { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #333 !important; }
             .report-table .subtotal-row td, .report-table .grand-total-row td { background: #f8f8f8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .report-table .grand-total-row#net-profit-row td { background: #e6fffa !important; border-top: 3px double #319795 !important; border-bottom: 3px double #319795 !important; color: #234e52 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .form-input { border: none !important; background: transparent !important; box-shadow: none !important; }
             .diary-report-header h2, .diary-report-header h3 { color: #1a1a1a !important; }
             .diary-report-header .report-date-display { color: #333 !important; }
@@ -838,7 +846,7 @@
             <a id="sidebar-sheet-link" class="btn btn-ghost btn-sm hidden mt-xs" target="_blank" href="#" style="width:100%; justify-content:center; border-color: rgba(66, 133, 244, 0.4); color: #63b3ed; font-size:0.72rem;">
                 <i class="fab fa-google-drive"></i> เปิด Google Sheet
             </a>
-            <span style="font-size:0.65rem; margin-top:4px; display:block; text-align:center;">Version 1.7 — Universal Date Fix</span>
+            <span style="font-size:0.65rem; margin-top:4px; display:block; text-align:center;">Version 1.8 — Net Profit Formula</span>
         </div>
     </aside>
 
@@ -907,9 +915,9 @@
                         <div class="stat-value" id="stat-total-expense">฿0.00</div>
                     </div>
                     <div class="stat-card net">
-                        <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
-                        <div class="stat-label">ยอดรายได้สุทธิ</div>
-                        <div class="stat-value" id="stat-net-income">฿0.00</div>
+                        <div class="stat-icon"><i class="fas fa-coins" style="color:var(--color-revenue);"></i></div>
+                        <div class="stat-label">กำไรสุทธิ (Net Profit)</div>
+                        <div class="stat-value" id="stat-net-income" style="color:var(--color-revenue);">฿0.00</div>
                     </div>
                     <div class="stat-card balance">
                         <div class="stat-icon"><i class="fas fa-landmark"></i></div>
@@ -1294,6 +1302,9 @@ function buildEntryTable() {
     categories.paymentChannels.forEach(item => { html += paymentRow(item); });
     html += grandTotalRow('total-payment', 'รวมรายได้ของทุกช่องทางการชำระเงิน');
 
+    // LAST ROW: NET PROFIT FORMULA
+    html += grandTotalRow('net-profit-row', 'กำไรสุทธิ (Net Profit)');
+
     tbody.innerHTML = html;
 }
 
@@ -1509,18 +1520,29 @@ function recalculate() {
     setCell('total-payment_DJ_EXP', '');
     setCell('total-payment_COMBINED', payCoopTotal + payDjTotal);
 
+    // EXACT USER FORMULA FOR NET PROFIT:
+    // กำไรสุทธิ = รวมรายได้ - รวมค่าใช้จ่ายในการดำเนินการ - รวมต้นทุนสินค้า + รวมลูกหนี้ ขายเชื่อ - รวมเจ้าหนี้การค้า
+    const netProfitCoop = subCoopRev - subOpexCoopExp - subCogsCoopExp + subDebtorCoopRev - subPayableCoopExp;
+    const netProfitDj   = subDjRev - subOpexDjExp - subCogsDjExp;
+    const netProfitCombined = netProfitCoop + netProfitDj;
+
+    setCell('net-profit-row_COOP_REV', netProfitCoop);
+    setCell('net-profit-row_COOP_EXP', '');
+    setCell('net-profit-row_DJ_REV', netProfitDj);
+    setCell('net-profit-row_DJ_EXP', '');
+    setCell('net-profit-row_COMBINED', netProfitCombined);
+
     const grandRevenue = subCoopRev + subDjRev;
     const grandExpense = totalCoopExp + totalDjExp;
-    const netIncome = grandRevenue - grandExpense;
     const paymentTotal = payCoopTotal + payDjTotal;
 
     document.getElementById('stat-total-revenue').textContent = formatCurrency(grandRevenue);
     document.getElementById('stat-total-expense').textContent = formatCurrency(grandExpense);
-    document.getElementById('stat-net-income').textContent = formatCurrency(netIncome);
+    document.getElementById('stat-net-income').textContent = formatCurrency(netProfitCombined);
     document.getElementById('stat-payment-total').textContent = formatCurrency(paymentTotal);
 
     const indicator = document.getElementById('reconcile-indicator');
-    const diff = Math.abs(netIncome - paymentTotal);
+    const diff = Math.abs(netProfitCombined - paymentTotal);
     if (grandRevenue === 0 && paymentTotal === 0) {
         indicator.innerHTML = '';
     } else if (diff < 0.01) {
@@ -1744,9 +1766,9 @@ function loadReportView() {
              <td></td><td class="currency">${formatNumber(sCogsCoop)}</td>
              <td></td><td class="currency">${formatNumber(sCogsDj)}</td><td></td></tr>`;
 
+    let sDebtRev = 0, sDebtExp = 0;
     if (report.debtors && report.debtors.length > 0) {
         html += sectionHeaderRow('หัก  ลูกหนี้ ขายเชื่อ', 'deduct-section', 'fa-user-tag');
-        let sDebtRev = 0, sDebtExp = 0;
         report.debtors.forEach(deb => {
             sDebtRev += deb.coopRev || 0;
             sDebtExp += deb.coopExp || 0;
@@ -1796,6 +1818,21 @@ function loadReportView() {
              <td class="currency" colspan="2">${formatNumber(sPayDj)}</td>
              <td class="currency">${formatNumber(sPayCoop + sPayDj)}</td></tr>`;
 
+    // LAST ROW: NET PROFIT FORMULA FOR REPORT PAGE
+    // Formula: Net Profit = Revenue - Operating Expenses - COGS + Debtors - Trade Payables
+    const netProfitCoop = sCoopRev - sOpexCoop - sCogsCoop + sDebtRev - sPayableCoop;
+    const netProfitDj   = sDjRev - sOpexDj - sCogsDj;
+    const netProfitCombined = netProfitCoop + netProfitDj;
+
+    html += `<tr class="grand-total-row" id="net-profit-row">
+        <td style="text-align:left; padding-left:12px; font-weight:800; color:var(--color-revenue);">
+            <i class="fas fa-coins" style="margin-right:6px;"></i> กำไรสุทธิ (Net Profit)
+        </td>
+        <td class="currency positive" colspan="2" style="font-size:0.95rem;">${formatNumber(netProfitCoop)}</td>
+        <td class="currency positive" colspan="2" style="font-size:0.95rem;">${formatNumber(netProfitDj)}</td>
+        <td class="currency positive" style="font-weight:800; font-size:1rem; color:var(--color-revenue);">${formatNumber(netProfitCombined)}</td>
+    </tr>`;
+
     html += `</tbody></table></div>`;
 
     html += `<div class="signature-section">
@@ -1822,7 +1859,7 @@ function renderDashboard() {
         return;
     }
 
-    let totalRev = 0, totalExp = 0, totalDays = dates.length;
+    let totalRev = 0, totalExp = 0, totalNetProfit = 0, totalDays = dates.length;
     const revByDate = [], expByDate = [], labels = [];
     const payChannelTotals = {};
 
@@ -1830,20 +1867,26 @@ function renderDashboard() {
         const r = allReports[date];
         if (!r) return;
         const d = r.data || {};
-        let dayRev = 0, dayExp = 0;
+        let dayRev = 0, dayOpex = 0, dayCogs = 0, dayPayable = 0, dayDebtor = 0;
 
         categories.revenue.forEach(item => {
             dayRev += (d[`${item.id}_COOP_REV`] || 0) + (d[`${item.id}_DJ_REV`] || 0);
         });
         categories.operatingExpense.forEach(item => {
-            dayExp += (d[`${item.id}_COOP_EXP`] || 0) + (d[`${item.id}_DJ_EXP`] || 0);
+            dayOpex += (d[`${item.id}_COOP_EXP`] || 0) + (d[`${item.id}_DJ_EXP`] || 0);
         });
         categories.cogs.forEach(item => {
-            dayExp += (d[`${item.id}_COOP_EXP`] || 0) + (d[`${item.id}_DJ_EXP`] || 0);
+            dayCogs += (d[`${item.id}_COOP_EXP`] || 0) + (d[`${item.id}_DJ_EXP`] || 0);
         });
         categories.tradePayable.forEach(item => {
-            dayExp += (d[`${item.id}_COOP_EXP`] || 0);
+            dayPayable += (d[`${item.id}_COOP_EXP`] || 0);
         });
+        if (r.debtors && r.debtors.length > 0) {
+            r.debtors.forEach(deb => { dayDebtor += deb.coopRev || 0; });
+        }
+
+        const dayExp = dayOpex + dayCogs + dayPayable;
+        const dayNetProfit = dayRev - dayOpex - dayCogs + dayDebtor - dayPayable;
 
         categories.paymentChannels.forEach(item => {
             const v = (d[`${item.id}_COOP`] || 0) + (d[`${item.id}_DJ`] || 0);
@@ -1852,6 +1895,7 @@ function renderDashboard() {
 
         totalRev += dayRev;
         totalExp += dayExp;
+        totalNetProfit += dayNetProfit;
         revByDate.push(dayRev);
         expByDate.push(dayExp);
         labels.push(formatShortDate(date));
@@ -1869,14 +1913,14 @@ function renderDashboard() {
             <div class="stat-value">${formatCurrency(totalExp)}</div>
         </div>
         <div class="stat-card net">
-            <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
-            <div class="stat-label">กำไรสุทธิ</div>
-            <div class="stat-value">${formatCurrency(totalRev - totalExp)}</div>
+            <div class="stat-icon"><i class="fas fa-coins" style="color:var(--color-revenue);"></i></div>
+            <div class="stat-label">กำไรสุทธิ (Net Profit รวม)</div>
+            <div class="stat-value" style="color:var(--color-revenue);">${formatCurrency(totalNetProfit)}</div>
         </div>
         <div class="stat-card balance">
             <div class="stat-icon"><i class="fas fa-calculator"></i></div>
-            <div class="stat-label">ค่าเฉลี่ยรายได้/วัน</div>
-            <div class="stat-value">${formatCurrency(totalDays > 0 ? totalRev / totalDays : 0)}</div>
+            <div class="stat-label">ค่าเฉลี่ยกำไรสุทธิ/วัน</div>
+            <div class="stat-value">${formatCurrency(totalDays > 0 ? totalNetProfit / totalDays : 0)}</div>
         </div>`;
 
     if (charts.revExp) charts.revExp.destroy();
@@ -2015,39 +2059,50 @@ async function queryHistory() {
             <th>วันที่</th><th>สถานะ</th>
             ${unit !== 'DUNGJAI' ? '<th>สหกรณ์ (รายได้)</th><th>สหกรณ์ (ค่าใช้จ่าย)</th>' : ''}
             ${unit !== 'COOP' ? '<th>ดั่งใจ (รายได้)</th><th>ดั่งใจ (ค่าใช้จ่าย)</th>' : ''}
-            <th>กำไรสุทธิ</th><th>การดำเนินการ</th>
+            <th>กำไรสุทธิ (Net Profit)</th><th>การดำเนินการ</th>
         </tr></thead><tbody>`;
 
-    let grandCoopRev = 0, grandCoopExp = 0, grandDjRev = 0, grandDjExp = 0;
+    let grandCoopRev = 0, grandCoopExp = 0, grandDjRev = 0, grandDjExp = 0, grandNetProfit = 0;
 
     dates.forEach(date => {
         const r = allReports[date];
         if (!r) return;
         const d = r.data || {};
-        let coopRev = 0, coopExp = 0, djRev = 0, djExp = 0;
+        let coopRev = 0, coopOpex = 0, coopCogs = 0, coopPayable = 0, coopDebtor = 0;
+        let djRev = 0, djOpex = 0, djCogs = 0;
 
         categories.revenue.forEach(item => {
             coopRev += (d[`${item.id}_COOP_REV`] || 0);
-            djRev += (d[`${item.id}_DJ_REV`] || 0);
+            djRev   += (d[`${item.id}_DJ_REV`] || 0);
         });
         categories.operatingExpense.forEach(item => {
-            coopExp += (d[`${item.id}_COOP_EXP`] || 0);
-            djExp += (d[`${item.id}_DJ_EXP`] || 0);
+            coopOpex += (d[`${item.id}_COOP_EXP`] || 0);
+            djOpex   += (d[`${item.id}_DJ_EXP`] || 0);
         });
         categories.cogs.forEach(item => {
-            coopExp += (d[`${item.id}_COOP_EXP`] || 0);
-            djExp += (d[`${item.id}_DJ_EXP`] || 0);
+            coopCogs += (d[`${item.id}_COOP_EXP`] || 0);
+            djCogs   += (d[`${item.id}_DJ_EXP`] || 0);
         });
         categories.tradePayable.forEach(item => {
-            coopExp += (d[`${item.id}_COOP_EXP`] || 0);
+            coopPayable += (d[`${item.id}_COOP_EXP`] || 0);
         });
+        if (r.debtors && r.debtors.length > 0) {
+            r.debtors.forEach(deb => { coopDebtor += deb.coopRev || 0; });
+        }
+
+        const coopExp = coopOpex + coopCogs + coopPayable;
+        const djExp = djOpex + djCogs;
+
+        const netProfitCoop = coopRev - coopOpex - coopCogs + coopDebtor - coopPayable;
+        const netProfitDj   = djRev - djOpex - djCogs;
+        const netProfitDay  = netProfitCoop + netProfitDj;
 
         grandCoopRev += coopRev;
         grandCoopExp += coopExp;
         grandDjRev += djRev;
         grandDjExp += djExp;
+        grandNetProfit += netProfitDay;
 
-        const net = (coopRev + djRev) - (coopExp + djExp);
         const statusBadge = r.status === 'VERIFIED' ? 'badge-verified' : r.status === 'SUBMITTED' ? 'badge-submitted' : 'badge-draft';
         const statusText = r.status === 'VERIFIED' ? '✅ ตรวจสอบ' : r.status === 'SUBMITTED' ? '📤 ส่งแล้ว' : '📝 ร่าง';
 
@@ -2056,7 +2111,7 @@ async function queryHistory() {
             <td><span class="badge ${statusBadge}">${statusText}</span></td>
             ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(coopRev)}</td><td class="currency negative">${formatNumber(coopExp)}</td>` : ''}
             ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(djRev)}</td><td class="currency negative">${formatNumber(djExp)}</td>` : ''}
-            <td class="currency" style="color:${net >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:700;">${formatNumber(net)}</td>
+            <td class="currency" style="color:${netProfitDay >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:700;">${formatNumber(netProfitDay)}</td>
             <td>
                 <button class="btn btn-ghost btn-sm" onclick="loadAndEditReport('${date}')"><i class="fas fa-pen"></i></button>
                 <button class="btn btn-ghost btn-sm" onclick="viewReportFromHistory('${date}')"><i class="fas fa-eye"></i></button>
@@ -2065,12 +2120,11 @@ async function queryHistory() {
         </tr>`;
     });
 
-    const totalNet = (grandCoopRev + grandDjRev) - (grandCoopExp + grandDjExp);
     html += `<tr style="font-weight:700; background:var(--color-primary-bg);">
         <td>รวม ${dates.length} วัน</td><td></td>
         ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(grandCoopRev)}</td><td class="currency negative">${formatNumber(grandCoopExp)}</td>` : ''}
         ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(grandDjRev)}</td><td class="currency negative">${formatNumber(grandDjExp)}</td>` : ''}
-        <td class="currency" style="color:${totalNet >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'};">${formatNumber(totalNet)}</td>
+        <td class="currency" style="color:${grandNetProfit >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:800; font-size:0.95rem;">${formatNumber(grandNetProfit)}</td>
         <td></td>
     </tr>`;
 
