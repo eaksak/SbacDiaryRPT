@@ -1336,6 +1336,9 @@ document.addEventListener('DOMContentLoaded', () => {
     buildEntryTable();
     loadReportForDate(today);
     renderSettingsPanel();
+    if (gasUrl) {
+        syncFromCloud();
+    }
 });
 
 // NAVIGATION
@@ -1357,6 +1360,10 @@ function switchTab(tabId, navEl) {
 
     if (tabId === 'tab-dashboard') {
         renderDashboard();
+    } else if (tabId === 'tab-history') {
+        queryHistory();
+    } else if (tabId === 'tab-report') {
+        loadReportView();
     }
 }
 
