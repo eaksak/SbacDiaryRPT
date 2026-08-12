@@ -2190,6 +2190,15 @@ function renderDashboard() {
 }
 
 // HISTORY / QUERY
+const SILOM_HISTORY_COLUMNS = [
+    { id: 'REV_COOP_SALES', label: 'สินค้าสหกรณ์' },
+    { id: 'REV_CANTEEN_RICE', label: 'โรงอาหารข้าว' },
+    { id: 'REV_BAKERY_CONSIGN', label: 'เบเกอรี่' },
+    { id: 'REV_CONSIGNMENT', label: 'ฝากขาย' },
+    { id: 'REV_UNIFORM', label: 'เครื่องแบบ' }
+];
+const SILOM_HISTORY_IDS = new Set(SILOM_HISTORY_COLUMNS.map(item => item.id));
+
 async function queryHistory() {
     const from = normalizeDateStr(document.getElementById('query-from').value);
     const to = normalizeDateStr(document.getElementById('query-to').value);
@@ -2216,26 +2225,46 @@ async function queryHistory() {
         return;
     }
 
+    const coopHeaderCells = unit !== 'DUNGJAI'
+        ? `${SILOM_HISTORY_COLUMNS.map(item => `<th>${item.label}</th>`).join('')}
+            <th>รายได้อื่นสหกรณ์</th>
+            <th>รวมรายได้สหกรณ์</th>
+            <th>ค่าใช้จ่ายสหกรณ์</th>`
+        : '';
+
     let html = `<table class="history-table">
         <thead><tr>
             <th>วันที่</th><th>สถานะ</th>
-            ${unit !== 'DUNGJAI' ? '<th>สหกรณ์ (รายได้)</th><th>สหกรณ์ (ค่าใช้จ่าย)</th>' : ''}
+            ${coopHeaderCells}
             ${unit !== 'COOP' ? '<th>ดั่งใจ (รายได้)</th><th>ดั่งใจ (ค่าใช้จ่าย)</th>' : ''}
             <th>กำไรสุทธิ (Net Profit)</th><th>การดำเนินการ</th>
         </tr></thead><tbody>`;
 
+    const grandSilomRevenue = Object.fromEntries(SILOM_HISTORY_COLUMNS.map(item => [item.id, 0]));
+    let grandCoopOtherRev = 0;
     let grandCoopRev = 0, grandCoopExp = 0, grandDjRev = 0, grandDjExp = 0, grandNetProfit = 0;
 
     dates.forEach(date => {
         const r = allReports[date];
         if (!r) return;
         const d = r.data || {};
-        let coopRev = 0, coopOpex = 0, coopCogs = 0, coopPayable = 0, coopDebtor = 0;
+        const silomRevenue = {};
+        let silomRevenueTotal = 0;
+        let coopOtherBaseRev = 0, coopOpex = 0, coopCogs = 0, coopPayable = 0, coopDebtor = 0;
         let djRev = 0, djOpex = 0, djCogs = 0;
 
+        SILOM_HISTORY_COLUMNS.forEach(item => {
+            const amount = parseNum(d[`${item.id}_COOP_REV`]);
+            silomRevenue[item.id] = amount;
+            silomRevenueTotal += amount;
+            grandSilomRevenue[item.id] += amount;
+        });
+
         categories.revenue.forEach(item => {
-            coopRev += parseNum(d[`${item.id}_COOP_REV`]);
-            djRev   += parseNum(d[`${item.id}_DJ_REV`]);
+            if (!SILOM_HISTORY_IDS.has(item.id)) {
+                coopOtherBaseRev += parseNum(d[`${item.id}_COOP_REV`]);
+            }
+            djRev += parseNum(d[`${item.id}_DJ_REV`]);
         });
         categories.operatingExpense.forEach(item => {
             coopOpex += parseNum(d[`${item.id}_COOP_EXP`]);
@@ -2252,6 +2281,8 @@ async function queryHistory() {
             r.debtors.forEach(deb => { coopDebtor += parseNum(deb.coopRev); });
         }
 
+        const coopRev = silomRevenueTotal + coopOtherBaseRev;
+        const coopOtherRev = coopOtherBaseRev + coopDebtor;
         const coopTotalRevWithDebtor = coopRev + coopDebtor;
         const coopExp = coopOpex + coopCogs + coopPayable;
         const djExp = djOpex + djCogs;
@@ -2260,6 +2291,7 @@ async function queryHistory() {
         const netProfitDj   = djRev - djOpex - djCogs;
         const netProfitDay  = netProfitCoop + netProfitDj;
 
+        grandCoopOtherRev += coopOtherRev;
         grandCoopRev += coopTotalRevWithDebtor;
         grandCoopExp += coopExp;
         grandDjRev += djRev;
@@ -2269,10 +2301,17 @@ async function queryHistory() {
         const statusBadge = r.status === 'VERIFIED' ? 'badge-verified' : r.status === 'SUBMITTED' ? 'badge-submitted' : 'badge-draft';
         const statusText = r.status === 'VERIFIED' ? '✅ ตรวจสอบ' : r.status === 'SUBMITTED' ? '📤 ส่งแล้ว' : '📝 ร่าง';
 
+        const coopCells = unit !== 'DUNGJAI'
+            ? `${SILOM_HISTORY_COLUMNS.map(item => `<td class="currency positive">${formatNumber(silomRevenue[item.id])}</td>`).join('')}
+                <td class="currency positive">${formatNumber(coopOtherRev)}</td>
+                <td class="currency positive" style="font-weight:800;">${formatNumber(coopTotalRevWithDebtor)}</td>
+                <td class="currency negative">${formatNumber(coopExp)}</td>`
+            : '';
+
         html += `<tr>
             <td>${formatThaiDate(date)}</td>
             <td><span class="badge ${statusBadge}">${statusText}</span></td>
-            ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(coopTotalRevWithDebtor)}</td><td class="currency negative">${formatNumber(coopExp)}</td>` : ''}
+            ${coopCells}
             ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(djRev)}</td><td class="currency negative">${formatNumber(djExp)}</td>` : ''}
             <td class="currency" style="color:${netProfitDay >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:700;">${formatNumber(netProfitDay)}</td>
             <td>
@@ -2283,15 +2322,22 @@ async function queryHistory() {
         </tr>`;
     });
 
+    const grandCoopCells = unit !== 'DUNGJAI'
+        ? `${SILOM_HISTORY_COLUMNS.map(item => `<td class="currency positive">${formatNumber(grandSilomRevenue[item.id])}</td>`).join('')}
+            <td class="currency positive">${formatNumber(grandCoopOtherRev)}</td>
+            <td class="currency positive" style="font-weight:800;">${formatNumber(grandCoopRev)}</td>
+            <td class="currency negative">${formatNumber(grandCoopExp)}</td>`
+        : '';
+
     html += `<tr style="font-weight:700; background:var(--color-primary-bg);">
         <td>รวม ${dates.length} วัน</td><td></td>
-        ${unit !== 'DUNGJAI' ? `<td class="currency positive">${formatNumber(grandCoopRev)}</td><td class="currency negative">${formatNumber(grandCoopExp)}</td>` : ''}
+        ${grandCoopCells}
         ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(grandDjRev)}</td><td class="currency negative">${formatNumber(grandDjExp)}</td>` : ''}
         <td class="currency" style="color:${grandNetProfit >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:800; font-size:0.95rem;">${formatNumber(grandNetProfit)}</td>
         <td></td>
     </tr>`;
 
-    html += `</tbody>mtable></div>`;
+    html += `</tbody></table>`;
     container.innerHTML = html;
 }
 
