@@ -664,3 +664,20 @@ function testApiGetReport() {
   var report = getReportByDate("2026-08-11");
   Logger.log("Report 2026-08-11: " + JSON.stringify(report));
 }
+
+function debugInspectSheetDates() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
+  if (linesSheet) {
+    var linesData = linesSheet.getDataRange().getValues();
+    Logger.log("--- ReportLines Total Rows: " + linesData.length + " ---");
+    for (var i = 1; i < Math.min(linesData.length, 35); i++) {
+      var rawCell = linesData[i][0];
+      var norm = normalizeDateStr(rawCell);
+      Logger.log("Row " + (i+1) + " | Raw: '" + rawCell + "' | Type: " + (typeof rawCell) + " | Norm: '" + norm + "' | Item: " + linesData[i][1] + " | CoopRev: " + linesData[i][3]);
+    }
+  } else {
+    Logger.log("No ReportLines sheet found!");
+  }
+}
