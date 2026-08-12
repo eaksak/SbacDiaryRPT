@@ -383,17 +383,17 @@ function getReportByDate(targetDateStr) {
         foundAny = true;
         var itemId = String(linesData[i][1]).trim();
         var group = String(linesData[i][2]).trim();
-        var coopRev = Number(linesData[i][3]) || 0;
-        var coopExp = Number(linesData[i][4]) || 0;
-        var djRev   = Number(linesData[i][5]) || 0;
-        var djExp   = Number(linesData[i][6]) || 0;
+        var coopRev = parseNum(linesData[i][3]);
+        var coopExp = parseNum(linesData[i][4]);
+        var djRev   = parseNum(linesData[i][5]);
+        var djExp   = parseNum(linesData[i][6]);
 
         if (group === "revenue") {
-          if (coopRev) report.data[itemId + "_COOP_REV"] = coopRev;
-          if (djRev)   report.data[itemId + "_DJ_REV"] = djRev;
+          report.data[itemId + "_COOP_REV"] = coopRev;
+          report.data[itemId + "_DJ_REV"] = djRev;
         } else {
-          if (coopExp) report.data[itemId + "_COOP_EXP"] = coopExp;
-          if (djExp)   report.data[itemId + "_DJ_EXP"] = djExp;
+          report.data[itemId + "_COOP_EXP"] = coopExp;
+          report.data[itemId + "_DJ_EXP"] = djExp;
         }
       }
     }
@@ -646,7 +646,7 @@ function importSilomRevenue(rawDate, revenueData) {
   var silomItems = ["REV_COOP_SALES", "REV_CANTEEN_RICE", "REV_BAKERY_CONSIGN", "REV_CONSIGNMENT", "REV_UNIFORM"];
 
   silomItems.forEach(function(itemId) {
-    var coopRevVal = Number(revenueData[itemId]) || 0;
+    var coopRevVal = parseNum(revenueData[itemId]);
 
     if (existingLines[itemId]) {
       var rowIndex = existingLines[itemId];
@@ -658,6 +658,14 @@ function importSilomRevenue(rawDate, revenueData) {
   });
 
   return { status: "success", message: "Silom revenue imported for " + date, date: date };
+}
+
+function parseNum(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  if (typeof val === "number") return isNaN(val) ? 0 : val;
+  var str = String(val).replace(/,/g, "").trim();
+  var num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
 }
 
 function testApiGetReport() {
