@@ -389,11 +389,23 @@ function getReportByDate(targetDateStr) {
         var djExp   = parseNum(linesData[i][6]);
 
         if (group === "revenue") {
-          report.data[itemId + "_COOP_REV"] = coopRev;
-          report.data[itemId + "_DJ_REV"] = djRev;
+          var keyCoop = itemId + "_COOP_REV";
+          if (coopRev !== 0 || report.data[keyCoop] === undefined) {
+            report.data[keyCoop] = coopRev;
+          }
+          var keyDj = itemId + "_DJ_REV";
+          if (djRev !== 0 || report.data[keyDj] === undefined) {
+            report.data[keyDj] = djRev;
+          }
         } else {
-          report.data[itemId + "_COOP_EXP"] = coopExp;
-          report.data[itemId + "_DJ_EXP"] = djExp;
+          var keyCoop = itemId + "_COOP_EXP";
+          if (coopExp !== 0 || report.data[keyCoop] === undefined) {
+            report.data[keyCoop] = coopExp;
+          }
+          var keyDj = itemId + "_DJ_EXP";
+          if (djExp !== 0 || report.data[keyDj] === undefined) {
+            report.data[keyDj] = djExp;
+          }
         }
       }
     }
@@ -635,11 +647,12 @@ function importSilomRevenue(rawDate, revenueData) {
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
   var linesData = linesSheet.getDataRange().getValues();
 
-  var existingLines = {};
+  var itemRowIndices = {};
   for (var r = 1; r < linesData.length; r++) {
     if (normalizeDateStr(linesData[r][0]) === date) {
       var itemId = String(linesData[r][1]).trim();
-      existingLines[itemId] = r + 1;
+      if (!itemRowIndices[itemId]) itemRowIndices[itemId] = [];
+      itemRowIndices[itemId].push(r + 1);
     }
   }
 
@@ -648,10 +661,11 @@ function importSilomRevenue(rawDate, revenueData) {
   silomItems.forEach(function(itemId) {
     var coopRevVal = parseNum(revenueData[itemId]);
 
-    if (existingLines[itemId]) {
-      var rowIndex = existingLines[itemId];
-      linesSheet.getRange(rowIndex, 4).setValue(coopRevVal);
-      linesSheet.getRange(rowIndex, 8).setValue("Silom POS Auto-Import");
+    if (itemRowIndices[itemId] && itemRowIndices[itemId].length > 0) {
+      itemRowIndices[itemId].forEach(function(rowIndex) {
+        linesSheet.getRange(rowIndex, 4).setValue(coopRevVal);
+        linesSheet.getRange(rowIndex, 8).setValue("Silom POS Auto-Import");
+      });
     } else {
       linesSheet.appendRow([date, itemId, "revenue", coopRevVal, 0, 0, 0, "Silom POS Auto-Import"]);
     }
