@@ -958,6 +958,7 @@
                             <option value="VERIFIED">✅ ตรวจสอบแล้ว</option>
                         </select>
                     </div>
+                    <button class="btn btn-ghost btn-sm" onclick="syncFromCloud()" title="ดึงข้อมูลล่าสุดจาก Google Sheets"><i class="fas fa-rotate"></i> ดึงข้อมูลจาก Cloud</button>
                     <div style="flex:1;"></div>
                     <div id="reconcile-indicator"></div>
                 </div>
@@ -1141,6 +1142,7 @@
                             <input type="text" class="form-input" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec">
                             <button class="btn btn-primary btn-sm" onclick="saveGasUrl()"><i class="fas fa-plug"></i> บันทึก &amp; เชื่อมต่อ</button>
                             <button class="btn btn-ghost btn-sm" onclick="testGasConnection()"><i class="fas fa-rotate"></i> ทดสอบการเชื่อมต่อ</button>
+                            <button class="btn btn-ghost btn-sm" onclick="syncFromCloud()"><i class="fas fa-cloud-arrow-down"></i> ดึงข้อมูลจาก Cloud</button>
                         </div>
                     </div>
                     <div id="gas-status-message"></div>
