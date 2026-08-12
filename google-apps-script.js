@@ -440,21 +440,44 @@ function getReportByDate(targetDateStr) {
 
 function listAllReports() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
-  var data = sheet.getDataRange().getValues();
-  var reports = [];
+  var reportsMap = {};
 
-  for (var i = 1; i < data.length; i++) {
-    var date = normalizeDateStr(data[i][0]);
-    if (!date) continue;
-    reports.push({
-      date: date,
-      status: data[i][1] || "DRAFT",
-      savedAt: data[i][2] || "",
-      createdBy: data[i][3] || ""
-    });
+  var sheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
+  if (sheet) {
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      var date = normalizeDateStr(data[i][0]);
+      if (!date) continue;
+      reportsMap[date] = {
+        date: date,
+        status: data[i][1] || "DRAFT",
+        savedAt: data[i][2] || "",
+        createdBy: data[i][3] || ""
+      };
+    }
   }
 
+  var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
+  if (linesSheet) {
+    var linesData = linesSheet.getDataRange().getValues();
+    for (var i = 1; i < linesData.length; i++) {
+      var date = normalizeDateStr(linesData[i][0]);
+      if (!date) continue;
+      if (!reportsMap[date]) {
+        reportsMap[date] = {
+          date: date,
+          status: "DRAFT",
+          savedAt: "",
+          createdBy: "Silom POS Auto-Import"
+        };
+      }
+    }
+  }
+
+  var reports = [];
+  Object.keys(reportsMap).forEach(function(d) {
+    reports.push(reportsMap[d]);
+  });
   reports.sort(function(a, b) { return b.date.localeCompare(a.date); });
   return reports;
 }
@@ -635,4 +658,9 @@ function importSilomRevenue(rawDate, revenueData) {
   });
 
   return { status: "success", message: "Silom revenue imported for " + date, date: date };
+}
+
+function testApiGetReport() {
+  var report = getReportByDate("2026-08-11");
+  Logger.log("Report 2026-08-11: " + JSON.stringify(report));
 }
