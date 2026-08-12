@@ -1267,6 +1267,15 @@ function normalizeDateStr(val) {
     return str;
 }
 
+// PARSE NUMERIC VALUE SAFELY (HANDLES COMMAS)
+function parseNum(val) {
+    if (val === null || val === undefined || val === '') return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const str = String(val).replace(/,/g, '').trim();
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+}
+
 // Default categories
 const DEFAULT_CATEGORIES = {
     revenue: [
@@ -2225,22 +2234,22 @@ async function queryHistory() {
         let djRev = 0, djOpex = 0, djCogs = 0;
 
         categories.revenue.forEach(item => {
-            coopRev += (d[`${item.id}_COOP_REV`] || 0);
-            djRev   += (d[`${item.id}_DJ_REV`] || 0);
+            coopRev += parseNum(d[`${item.id}_COOP_REV`]);
+            djRev   += parseNum(d[`${item.id}_DJ_REV`]);
         });
         categories.operatingExpense.forEach(item => {
-            coopOpex += (d[`${item.id}_COOP_EXP`] || 0);
-            djOpex   += (d[`${item.id}_DJ_EXP`] || 0);
+            coopOpex += parseNum(d[`${item.id}_COOP_EXP`]);
+            djOpex   += parseNum(d[`${item.id}_DJ_EXP`]);
         });
         categories.cogs.forEach(item => {
-            coopCogs += (d[`${item.id}_COOP_EXP`] || 0);
-            djCogs   += (d[`${item.id}_DJ_EXP`] || 0);
+            coopCogs += parseNum(d[`${item.id}_COOP_EXP`]);
+            djCogs   += parseNum(d[`${item.id}_DJ_EXP`]);
         });
         categories.tradePayable.forEach(item => {
-            coopPayable += (d[`${item.id}_COOP_EXP`] || 0);
+            coopPayable += parseNum(d[`${item.id}_COOP_EXP`]);
         });
         if (r.debtors && r.debtors.length > 0) {
-            r.debtors.forEach(deb => { coopDebtor += deb.coopRev || 0; });
+            r.debtors.forEach(deb => { coopDebtor += parseNum(deb.coopRev); });
         }
 
         const coopTotalRevWithDebtor = coopRev + coopDebtor;
