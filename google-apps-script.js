@@ -349,76 +349,89 @@ function getReportByDate(targetDateStr) {
   var date = normalizeDateStr(targetDateStr);
   if (!date) return null;
 
-  var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
-  var headerData = headerSheet.getDataRange().getValues();
-  var report = null;
+  var report = {
+    date: date,
+    status: "DRAFT",
+    savedAt: "",
+    createdBy: "",
+    data: {},
+    debtors: []
+  };
+  var foundAny = false;
 
-  for (var i = 1; i < headerData.length; i++) {
-    var d = normalizeDateStr(headerData[i][0]);
-    if (d === date) {
-      report = {
-        date: date,
-        status: headerData[i][1],
-        savedAt: headerData[i][2],
-        createdBy: headerData[i][3],
-        data: {},
-        debtors: []
-      };
-      break;
+  var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
+  if (headerSheet) {
+    var headerData = headerSheet.getDataRange().getValues();
+    for (var i = 1; i < headerData.length; i++) {
+      var d = normalizeDateStr(headerData[i][0]);
+      if (d === date) {
+        report.status = headerData[i][1] || "DRAFT";
+        report.savedAt = headerData[i][2] || "";
+        report.createdBy = headerData[i][3] || "";
+        foundAny = true;
+        break;
+      }
     }
   }
 
-  if (!report) return null;
-
   var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
-  var linesData = linesSheet.getDataRange().getValues();
-  for (var i = 1; i < linesData.length; i++) {
-    var d = normalizeDateStr(linesData[i][0]);
-    if (d === date) {
-      var itemId = linesData[i][1];
-      var group = linesData[i][2];
-      var coopRev = Number(linesData[i][3]) || 0;
-      var coopExp = Number(linesData[i][4]) || 0;
-      var djRev   = Number(linesData[i][5]) || 0;
-      var djExp   = Number(linesData[i][6]) || 0;
+  if (linesSheet) {
+    var linesData = linesSheet.getDataRange().getValues();
+    for (var i = 1; i < linesData.length; i++) {
+      var d = normalizeDateStr(linesData[i][0]);
+      if (d === date) {
+        foundAny = true;
+        var itemId = String(linesData[i][1]).trim();
+        var group = String(linesData[i][2]).trim();
+        var coopRev = Number(linesData[i][3]) || 0;
+        var coopExp = Number(linesData[i][4]) || 0;
+        var djRev   = Number(linesData[i][5]) || 0;
+        var djExp   = Number(linesData[i][6]) || 0;
 
-      if (group === "revenue") {
-        if (coopRev) report.data[itemId + "_COOP_REV"] = coopRev;
-        if (djRev)   report.data[itemId + "_DJ_REV"] = djRev;
-      } else {
-        if (coopExp) report.data[itemId + "_COOP_EXP"] = coopExp;
-        if (djExp)   report.data[itemId + "_DJ_EXP"] = djExp;
+        if (group === "revenue") {
+          if (coopRev) report.data[itemId + "_COOP_REV"] = coopRev;
+          if (djRev)   report.data[itemId + "_DJ_REV"] = djRev;
+        } else {
+          if (coopExp) report.data[itemId + "_COOP_EXP"] = coopExp;
+          if (djExp)   report.data[itemId + "_DJ_EXP"] = djExp;
+        }
       }
     }
   }
 
   var debtorSheet = ss.getSheetByName(SHEET_DEBTORS);
-  var debtorData = debtorSheet.getDataRange().getValues();
-  for (var i = 1; i < debtorData.length; i++) {
-    var d = normalizeDateStr(debtorData[i][0]);
-    if (d === date) {
-      report.debtors.push({
-        name: debtorData[i][1],
-        coopRev: Number(debtorData[i][2]) || 0,
-        coopExp: Number(debtorData[i][3]) || 0
-      });
+  if (debtorSheet) {
+    var debtorData = debtorSheet.getDataRange().getValues();
+    for (var i = 1; i < debtorData.length; i++) {
+      var d = normalizeDateStr(debtorData[i][0]);
+      if (d === date) {
+        foundAny = true;
+        report.debtors.push({
+          name: String(debtorData[i][1]).trim(),
+          coopRev: Number(debtorData[i][2]) || 0,
+          coopExp: Number(debtorData[i][3]) || 0
+        });
+      }
     }
   }
 
   var paySheet = ss.getSheetByName(SHEET_PAYMENT_CHANNELS);
-  var payData = paySheet.getDataRange().getValues();
-  for (var i = 1; i < payData.length; i++) {
-    var d = normalizeDateStr(payData[i][0]);
-    if (d === date) {
-      var channelId = payData[i][1];
-      var coopAmt = Number(payData[i][2]) || 0;
-      var djAmt   = Number(payData[i][3]) || 0;
-      if (coopAmt) report.data[channelId + "_COOP"] = coopAmt;
-      if (djAmt)   report.data[channelId + "_DJ"] = djAmt;
+  if (paySheet) {
+    var payData = paySheet.getDataRange().getValues();
+    for (var i = 1; i < payData.length; i++) {
+      var d = normalizeDateStr(payData[i][0]);
+      if (d === date) {
+        foundAny = true;
+        var channelId = String(payData[i][1]).trim();
+        var coopAmt = Number(payData[i][2]) || 0;
+        var djAmt   = Number(payData[i][3]) || 0;
+        if (coopAmt) report.data[channelId + "_COOP"] = coopAmt;
+        if (djAmt)   report.data[channelId + "_DJ"] = djAmt;
+      }
     }
   }
 
-  return report;
+  return foundAny ? report : null;
 }
 
 // ================================================================
