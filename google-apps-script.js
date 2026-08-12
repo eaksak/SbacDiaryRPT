@@ -30,6 +30,11 @@ var SHEET_REPORT_LINES     = "ReportLines";
 var SHEET_DEBTORS          = "Debtors";
 var SHEET_PAYMENT_CHANNELS = "PaymentChannels";
 var SHEET_CONFIG           = "Config";
+var SHEET_SILOM_SYNC_LOG   = "SilomSyncLog";
+
+var MINIMART_API_URL_PROPERTY = "MINIMART_API_URL";
+var SILOM_DAILY_SYNC_HOUR = 19;
+var SILOM_SYNC_TIMEZONE = "Asia/Bangkok";
 
 // ================================================================
 // DATE NORMALIZER HELPER
@@ -220,6 +225,13 @@ function ensureSheetsExist() {
     var s = ss.insertSheet(SHEET_CONFIG);
     s.appendRow(["key", "value"]);
     s.getRange(1, 1, 1, 2).setFontWeight("bold");
+    s.setFrozenRows(1);
+  }
+
+  if (!ss.getSheetByName(SHEET_SILOM_SYNC_LOG)) {
+    var s = ss.insertSheet(SHEET_SILOM_SYNC_LOG);
+    s.appendRow(["timestamp", "date", "status", "message", "sourceGeneratedAt", "revenueData"]);
+    s.getRange(1, 1, 1, 6).setFontWeight("bold");
     s.setFrozenRows(1);
   }
 }
@@ -611,6 +623,207 @@ function clearRowsByDate(sheetName, targetDateStr) {
   }
 }
 
+
+/**
+ * Adds safe, spreadsheet-bound controls without exposing a new public write API.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("SBAC Diary")
+    .addItem("ตั้งค่า Minimart API URL", "configureMinimartApiUrlFromMenu")
+    .addItem("ซิงค์ยอดขาย Silom วันนี้", "syncSilomTodayFromMenu")
+    .addSeparator()
+    .addItem("ติดตั้งซิงค์อัตโนมัติรายวัน", "installSilomDailySyncTrigger")
+    .addItem("ยกเลิกซิงค์อัตโนมัติ", "removeSilomDailySyncTriggersFromMenu")
+    .addToUi();
+}
+
+function configureMinimartApiUrlFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  var currentUrl = PropertiesService.getScriptProperties()
+    .getProperty(MINIMART_API_URL_PROPERTY) || "";
+  var prompt = ui.prompt(
+    "ตั้งค่า Minimart API",
+    "วาง URL ของ Minimart Apps Script Web App\n" + (currentUrl ? "URL ปัจจุบัน: " + currentUrl : ""),
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (prompt.getSelectedButton() !== ui.Button.OK) return;
+
+  var url = String(prompt.getResponseText() || "").trim();
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)) {
+    ui.alert("URL ไม่ถูกต้อง กรุณาใช้ Apps Script Web App URL ที่ลงท้ายด้วย /exec");
+    return;
+  }
+
+  PropertiesService.getScriptProperties()
+    .setProperty(MINIMART_API_URL_PROPERTY, url.replace(/\?.*$/, ""));
+  ui.alert("บันทึก Minimart API URL เรียบร้อย");
+}
+
+function syncSilomTodayFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var result = syncTodaySilomRevenue();
+    ui.alert(
+      "ซิงค์ยอดขาย Silom สำเร็จ\nวันที่: " + result.date +
+      "\nยอดรวม: " + result.total
+    );
+  } catch (err) {
+    ui.alert("ซิงค์ยอดขาย Silom ไม่สำเร็จ\n" + err.message);
+  }
+}
+
+function syncTodaySilomRevenue() {
+  var date = Utilities.formatDate(new Date(), SILOM_SYNC_TIMEZONE, "yyyy-MM-dd");
+  return syncSilomRevenueForDate(date);
+}
+
+function syncSilomRevenueForDate(rawDate) {
+  var date = normalizeDateStr(rawDate);
+  if (!date) throw new Error("Invalid Silom sync date.");
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    throw new Error("Another SBAC diary sync is already running.");
+  }
+
+  var sourceGeneratedAt = "";
+  try {
+    ensureSheetsExist();
+
+    var baseUrl = PropertiesService.getScriptProperties()
+      .getProperty(MINIMART_API_URL_PROPERTY);
+    if (!baseUrl) {
+      throw new Error("Minimart API URL is not configured. Use the SBAC Diary menu first.");
+    }
+
+    var separator = baseUrl.indexOf("?") === -1 ? "?" : "&";
+    var endpoint = baseUrl + separator + "action=dailySummary&date=" + encodeURIComponent(date);
+    var httpResponse = UrlFetchApp.fetch(endpoint, {
+      method: "get",
+      followRedirects: true,
+      muteHttpExceptions: true
+    });
+
+    var statusCode = httpResponse.getResponseCode();
+    var responseText = httpResponse.getContentText();
+    if (statusCode < 200 || statusCode >= 300) {
+      throw new Error("Minimart API HTTP " + statusCode + ": " + responseText.slice(0, 250));
+    }
+
+    var payload;
+    try {
+      payload = JSON.parse(responseText);
+    } catch (parseError) {
+      throw new Error("Minimart API returned invalid JSON.");
+    }
+
+    if (!payload || payload.status !== "success") {
+      throw new Error(
+        "Minimart API error: " +
+        ((payload && (payload.message || payload.code)) || "Unknown response")
+      );
+    }
+    if (normalizeDateStr(payload.date) !== date) {
+      throw new Error("Minimart API returned a different report date.");
+    }
+
+    var requiredKeys = [
+      "REV_COOP_SALES",
+      "REV_CANTEEN_RICE",
+      "REV_BAKERY_CONSIGN",
+      "REV_CONSIGNMENT",
+      "REV_UNIFORM"
+    ];
+    var sourceData = payload.data || {};
+    var revenueData = {};
+
+    requiredKeys.forEach(function(key) {
+      if (!Object.prototype.hasOwnProperty.call(sourceData, key)) {
+        throw new Error("Minimart summary is missing " + key);
+      }
+      var value = Number(sourceData[key]);
+      if (!isFinite(value)) {
+        throw new Error("Minimart summary contains an invalid value for " + key);
+      }
+      revenueData[key] = Math.round(value * 100) / 100;
+    });
+
+    var importResult = importSilomRevenue(date, revenueData);
+    sourceGeneratedAt = payload.generatedAt || "";
+    appendSilomSyncLog_(
+      date,
+      "SUCCESS",
+      importResult.message,
+      sourceGeneratedAt,
+      revenueData
+    );
+
+    return {
+      status: "success",
+      date: date,
+      total: Number(payload.total) || 0,
+      revenueData: revenueData,
+      sourceGeneratedAt: sourceGeneratedAt
+    };
+  } catch (err) {
+    try {
+      appendSilomSyncLog_(date, "ERROR", err.message, sourceGeneratedAt, {});
+    } catch (logError) {
+      console.error(logError);
+    }
+    throw err;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function appendSilomSyncLog_(date, status, message, sourceGeneratedAt, revenueData) {
+  ensureSheetsExist();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(SHEET_SILOM_SYNC_LOG);
+  sheet.appendRow([
+    new Date(),
+    date,
+    status,
+    message || "",
+    sourceGeneratedAt || "",
+    JSON.stringify(revenueData || {})
+  ]);
+}
+
+function installSilomDailySyncTrigger() {
+  removeSilomDailySyncTriggers_();
+  ScriptApp.newTrigger("syncTodaySilomRevenue")
+    .timeBased()
+    .atHour(SILOM_DAILY_SYNC_HOUR)
+    .everyDays(1)
+    .inTimezone(SILOM_SYNC_TIMEZONE)
+    .create();
+
+  SpreadsheetApp.getUi().alert(
+    "ติดตั้งซิงค์อัตโนมัติทุกวันเวลาประมาณ " +
+    SILOM_DAILY_SYNC_HOUR + ":00 น. เรียบร้อย"
+  );
+}
+
+function removeSilomDailySyncTriggersFromMenu() {
+  var removed = removeSilomDailySyncTriggers_();
+  SpreadsheetApp.getUi().alert("ยกเลิก Trigger จำนวน " + removed + " รายการเรียบร้อย");
+}
+
+function removeSilomDailySyncTriggers_() {
+  var removed = 0;
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === "syncTodaySilomRevenue") {
+      ScriptApp.deleteTrigger(trigger);
+      removed++;
+    }
+  });
+  return removed;
+}
+
 function testSetup() {
   ensureSheetsExist();
   Logger.log("✅ All sheets created successfully!");
@@ -641,6 +854,8 @@ function importSilomRevenue(rawDate, revenueData) {
   var now = new Date().toISOString();
   if (existingRow === -1) {
     headerSheet.appendRow([date, "DRAFT", now, "Silom POS Auto-Import"]);
+  } else {
+    headerSheet.getRange(existingRow, 3).setValue(now);
   }
 
   // 2. Merge into ReportLines sheet
