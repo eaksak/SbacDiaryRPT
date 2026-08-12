@@ -1729,6 +1729,45 @@ async function saveReport() {
     }
 }
 
+async function syncFromCloud() {
+    if (!gasUrl) {
+        showToast('กรุณาตั้งค่าและเชื่อมต่อ Google Apps Script Web App URL ก่อน', 'error');
+        return;
+    }
+    showToast('กำลังดึงข้อมูลทั้งหมดจาก Cloud...', 'info');
+    try {
+        const res = await fetch(`${gasUrl}?action=listReports`);
+        const result = await res.json();
+        if (result.status === 'success' && Array.isArray(result.data)) {
+            let fetchedCount = 0;
+            for (const item of result.data) {
+                const normDate = normalizeDateStr(item.date);
+                if (!normDate) continue;
+                try {
+                    const detailRes = await fetch(`${gasUrl}?action=getReport&date=${normDate}`);
+                    const detailData = await detailRes.json();
+                    if (detailData.status === 'success' && detailData.data) {
+                        detailData.data.date = normDate;
+                        allReports[normDate] = detailData.data;
+                        fetchedCount++;
+                    }
+                } catch(e) {}
+            }
+            saveAllReports();
+            showToast(`✅ ดึงข้อมูลสำเร็จ ${fetchedCount} วันจาก Cloud เรียบร้อย`, 'success');
+            
+            const currentDate = normalizeDateStr(document.getElementById('report-date').value);
+            if (currentDate) {
+                loadReportForDate(currentDate);
+            }
+        } else {
+            showToast('ไม่สามารถดึงข้อมูลจาก Cloud ได้: ' + (result.message || ''), 'error');
+        }
+    } catch (err) {
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ Cloud: ' + err.message, 'error');
+    }
+}
+
 async function loadReportForDate(rawDateStr) {
     const dateStr = normalizeDateStr(rawDateStr);
     if (gasUrl && dateStr) {
