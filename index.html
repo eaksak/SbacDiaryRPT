@@ -889,6 +889,11 @@
             <div class="nav-item" data-tab="tab-settings" onclick="switchTab('tab-settings', this)">
                 <i class="fas fa-cog"></i> ตั้งค่าระบบ &amp; Cloud
             </div>
+
+            <div class="sidebar-section-label">เชื่อมต่อระบบ</div>
+            <a class="nav-item" href="silom-report.html" style="color: var(--color-primary); font-weight:600;">
+                <i class="fas fa-cash-register"></i> Silom POS Dashboard
+            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -898,7 +903,7 @@
             <a id="sidebar-sheet-link" class="btn btn-ghost btn-sm hidden mt-xs" target="_blank" href="#" style="width:100%; justify-content:center; border-color: rgba(37, 99, 235, 0.3); color: #2563eb; font-size:0.72rem;">
                 <i class="fab fa-google-drive"></i> เปิด Google Sheet
             </a>
-            <span style="font-size:0.65rem; margin-top:6px; display:block; text-align:center;">Version 2.0 — Light Theme Default</span>
+            <span style="font-size:0.65rem; margin-top:6px; display:block; text-align:center;">Version 2.1 — Silom POS Auto-Feed</span>
         </div>
     </aside>
 
@@ -1158,6 +1163,20 @@
                             <li>กด Deploy, อนุมัติสิทธิ์ (Authorize), แล้วคัดลอก <b>Web App URL</b> มาวางในช่องด้านบน</li>
                         </ol>
                     </details>
+                </div>
+
+                <!-- Silom POS Auto-Feed Card -->
+                <div class="card mb-lg">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-cash-register" style="color: #10B981;"></i> Silom POS Auto-Feed Integration</h3>
+                        <a href="silom-report.html" class="btn btn-ghost btn-sm" style="border-color: #10B981; color: #059669;">
+                            <i class="fas fa-arrow-right-to-bracket"></i> เปิด Silom POS Dashboard
+                        </a>
+                    </div>
+                    <p style="color:var(--color-text-muted); font-size:0.85rem; line-height:1.6;">
+                        ระบบรองรับการดึงยอดขายจาก <b>Silom POS Excel Files</b> โดยอัตโนมัติ เมื่อมีการอัปโหลดไฟล์ผ่านหน้า <a href="silom-report.html" style="color:var(--color-primary); font-weight:600;">Silom POS Dashboard</a> 
+                        ยอดขายทั้ง 5 หมวดหมู่ (สินค้าสหกรณ์, โรงอาหารข้าว, ร้านเบเกอรี่, ฝากขาย, เครื่องแบบเครื่องหมาย) จะถูกส่งเข้าสู่รายงานสรุปประจำวันของ <b>สหกรณ์ร้านค้า</b> โดยอัตโนมัติ โดยไม่กระทบกับค่าใช้จ่ายและลูกหนี้ที่บันทึกไว้
+                    </p>
                 </div>
 
                 <!-- Master Categories Card -->

@@ -165,6 +165,11 @@ function doPost(e) {
         response = { status: "success", message: "บันทึกการตั้งค่าเรียบร้อย", spreadsheetUrl: ssUrl };
         break;
 
+      case "importSilomRevenue":
+        var result = importSilomRevenue(postData.date, postData.revenueData);
+        response = { status: "success", message: result.message, date: result.date, spreadsheetUrl: ssUrl };
+        break;
+
       default:
         throw new Error("Unknown action: " + action);
     }
@@ -562,4 +567,59 @@ function testSetup() {
   ensureSheetsExist();
   Logger.log("✅ All sheets created successfully!");
   Logger.log("Spreadsheet URL: " + SpreadsheetApp.getActiveSpreadsheet().getUrl());
+}
+
+/**
+ * Imports/merges Silom POS daily revenue figures into SbacDiaryRPT without overwriting existing expenses or debtors.
+ */
+function importSilomRevenue(rawDate, revenueData) {
+  var date = normalizeDateStr(rawDate);
+  if (!date) throw new Error("Invalid date for Silom import");
+
+  ensureSheetsExist();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 1. Ensure DailyReports entry exists
+  var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
+  var headerData = headerSheet.getDataRange().getValues();
+  var existingRow = -1;
+  for (var i = 1; i < headerData.length; i++) {
+    if (normalizeDateStr(headerData[i][0]) === date) {
+      existingRow = i + 1;
+      break;
+    }
+  }
+
+  var now = new Date().toISOString();
+  if (existingRow === -1) {
+    headerSheet.appendRow([date, "DRAFT", now, "Silom POS Auto-Import"]);
+  }
+
+  // 2. Merge into ReportLines sheet
+  var linesSheet = ss.getSheetByName(SHEET_REPORT_LINES);
+  var linesData = linesSheet.getDataRange().getValues();
+
+  var existingLines = {};
+  for (var r = 1; r < linesData.length; r++) {
+    if (normalizeDateStr(linesData[r][0]) === date) {
+      var itemId = String(linesData[r][1]).trim();
+      existingLines[itemId] = r + 1;
+    }
+  }
+
+  var silomItems = ["REV_COOP_SALES", "REV_CANTEEN_RICE", "REV_BAKERY_CONSIGN", "REV_CONSIGNMENT", "REV_UNIFORM"];
+
+  silomItems.forEach(function(itemId) {
+    var coopRevVal = Number(revenueData[itemId]) || 0;
+
+    if (existingLines[itemId]) {
+      var rowIndex = existingLines[itemId];
+      linesSheet.getRange(rowIndex, 4).setValue(coopRevVal);
+      linesSheet.getRange(rowIndex, 8).setValue("Silom POS Auto-Import");
+    } else {
+      linesSheet.appendRow([date, itemId, "revenue", coopRevVal, 0, 0, 0, "Silom POS Auto-Import"]);
+    }
+  });
+
+  return { status: "success", message: "Silom revenue imported for " + date, date: date };
 }
