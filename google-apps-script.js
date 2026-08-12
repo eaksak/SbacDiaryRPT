@@ -686,7 +686,7 @@ function syncSilomDateFromMenu() {
   if (prompt.getSelectedButton() !== ui.Button.OK) return;
 
   var date = normalizeDateStr(prompt.getResponseText());
-  if (!date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     ui.alert("วันที่ไม่ถูกต้อง กรุณากรอกใหม่ เช่น 2026-08-10 หรือ 10/08/2026");
     return;
   }
@@ -694,11 +694,11 @@ function syncSilomDateFromMenu() {
   try {
     var result = syncSilomRevenueForDate(date);
     ui.alert(
-      "ซิงค์ยอดขาย Silom สำเร็จ\\nวันที่: " + result.date +
-      "\\nยอดรวม: " + result.total
+      "ซิงค์ยอดขาย Silom สำเร็จ\nวันที่: " + result.date +
+      "\nยอดรวม: " + result.total
     );
   } catch (err) {
-    ui.alert("ซิงค์ยอดขาย Silom ไม่สำเร็จ\\n" + err.message);
+    ui.alert("ซิงค์ยอดขาย Silom ไม่สำเร็จ\n" + err.message);
   }
 }
 
