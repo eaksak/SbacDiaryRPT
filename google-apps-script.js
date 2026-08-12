@@ -672,10 +672,12 @@ function debugInspectSheetDates() {
   if (linesSheet) {
     var linesData = linesSheet.getDataRange().getValues();
     Logger.log("--- ReportLines Total Rows: " + linesData.length + " ---");
-    for (var i = 1; i < Math.min(linesData.length, 35); i++) {
+    for (var i = 1; i < linesData.length; i++) {
       var rawCell = linesData[i][0];
       var norm = normalizeDateStr(rawCell);
-      Logger.log("Row " + (i+1) + " | Raw: '" + rawCell + "' | Type: " + (typeof rawCell) + " | Norm: '" + norm + "' | Item: " + linesData[i][1] + " | CoopRev: " + linesData[i][3]);
+      if (norm.indexOf("2026-08") !== -1) {
+        Logger.log("Row " + (i+1) + " | Date: '" + norm + "' | Item: " + linesData[i][1] + " | CoopRev: " + linesData[i][3]);
+      }
     }
   } else {
     Logger.log("No ReportLines sheet found!");
