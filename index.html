@@ -1096,7 +1096,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title"><i class="fas fa-magnifying-glass-chart"></i> ค้นหาและกรองรายงาน</h3>
-                        <button class="btn btn-ghost btn-sm" onclick="syncFromCloud()"><i class="fas fa-rotate"></i> ดึงข้อมูลจาก Cloud</button>
+                        <button class="btn btn-ghost btn-sm" onclick="refreshHistoryFromCloud()"><i class="fas fa-rotate"></i> ดึงข้อมูลจาก Cloud</button>
                     </div>
                     <div class="flex gap-md mb-lg no-print" style="flex-wrap:wrap;">
                         <div class="form-group" style="margin-bottom:0;">
@@ -2198,8 +2198,10 @@ const SILOM_HISTORY_COLUMNS = [
     { id: 'REV_UNIFORM', label: 'เครื่องแบบ' }
 ];
 const SILOM_HISTORY_IDS = new Set(SILOM_HISTORY_COLUMNS.map(item => item.id));
+let historyQueryRequestId = 0;
 
-async function queryHistory() {
+async function queryHistory(options = {}) {
+    const requestId = ++historyQueryRequestId;
     const from = normalizeDateStr(document.getElementById('query-from').value);
     const to = normalizeDateStr(document.getElementById('query-to').value);
     const unit = document.getElementById('query-unit').value;
@@ -2210,17 +2212,31 @@ async function queryHistory() {
         return;
     }
 
-    if (gasUrl) {
-        showToast('กำลังดึงข้อมูลจาก Google Sheets...', 'info');
-        await syncFromCloud();
+    if (from > to) {
+        showToast('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด', 'error');
+        return;
     }
 
-    const dates = Object.keys(allReports)
-        .map(d => normalizeDateStr(d))
-        .filter(d => d && d >= from && d <= to)
-        .sort();
+    // Searching uses the reports already loaded in memory so changing the date
+    // range is immediate. Cloud refresh is explicit to avoid overlapping slow
+    // requests that can render an older date range after a newer search.
+    if (options.syncCloud && gasUrl) {
+        showToast('กำลังดึงข้อมูลจาก Google Sheets...', 'info');
+        await syncFromCloud();
+        if (requestId !== historyQueryRequestId) return;
+    }
 
-    if (dates.length === 0) {
+    const reportsByDate = new Map();
+    Object.entries(allReports).forEach(([key, report]) => {
+        const date = normalizeDateStr(report && report.date ? report.date : key);
+        if (date && date >= from && date <= to) {
+            reportsByDate.set(date, report);
+        }
+    });
+    const reports = Array.from(reportsByDate.entries())
+        .sort(([dateA], [dateB]) => dateA.localeCompare(dateB));
+
+    if (reports.length === 0) {
         container.innerHTML = `<p style="text-align:center; padding:40px 0; color:var(--color-text-muted);">ไม่พบรายงานในช่วงวันที่ที่เลือก</p>`;
         return;
     }
@@ -2244,8 +2260,7 @@ async function queryHistory() {
     let grandCoopOtherRev = 0;
     let grandCoopRev = 0, grandCoopExp = 0, grandDjRev = 0, grandDjExp = 0, grandNetProfit = 0;
 
-    dates.forEach(date => {
-        const r = allReports[date];
+    reports.forEach(([date, r]) => {
         if (!r) return;
         const d = r.data || {};
         const silomRevenue = {};
@@ -2330,7 +2345,7 @@ async function queryHistory() {
         : '';
 
     html += `<tr style="font-weight:700; background:var(--color-primary-bg);">
-        <td>รวม ${dates.length} วัน</td><td></td>
+        <td>รวม ${reports.length} วัน</td><td></td>
         ${grandCoopCells}
         ${unit !== 'COOP' ? `<td class="currency positive">${formatNumber(grandDjRev)}</td><td class="currency negative">${formatNumber(grandDjExp)}</td>` : ''}
         <td class="currency" style="color:${grandNetProfit >= 0 ? 'var(--color-revenue)' : 'var(--color-expense)'}; font-weight:800; font-size:0.95rem;">${formatNumber(grandNetProfit)}</td>
@@ -2339,6 +2354,10 @@ async function queryHistory() {
 
     html += `</tbody></table>`;
     container.innerHTML = html;
+}
+
+async function refreshHistoryFromCloud() {
+    await queryHistory({ syncCloud: true });
 }
 
 function loadAndEditReport(dateStr) {
