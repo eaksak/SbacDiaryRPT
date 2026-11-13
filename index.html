@@ -609,12 +609,12 @@
             color: var(--color-text-primary);
         }
 
-        .col-item { width: 30%; }
-        .col-coop-rev { width: 11%; }
-        .col-coop-exp { width: 11%; }
-        .col-dj-rev { width: 11%; }
-        .col-dj-exp { width: 11%; }
-        .col-note { width: 26%; }
+        .col-item { width: 44%; }
+        .col-coop-rev { width: 9.5%; }
+        .col-coop-exp { width: 9.5%; }
+        .col-dj-rev { width: 9.5%; }
+        .col-dj-exp { width: 9.5%; }
+        .col-note { width: 18%; }
 
         .reconcile-status {
             display: inline-flex;
@@ -937,10 +937,16 @@
             .report-table {
                 width: 100% !important;
                 border-collapse: collapse !important;
-                font-size: 9.2pt !important;
+                font-size: 9.4pt !important;
                 table-layout: fixed !important;
                 margin: 0 !important;
             }
+            .col-item { width: 44% !important; }
+            .col-coop-rev { width: 9.5% !important; }
+            .col-coop-exp { width: 9.5% !important; }
+            .col-dj-rev { width: 9.5% !important; }
+            .col-dj-exp { width: 9.5% !important; }
+            .col-note { width: 18% !important; }
             .report-table tr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
@@ -960,18 +966,18 @@
                 padding: 1.8px 4px !important;
                 border: 1px solid #d1d5db !important;
                 color: #111827 !important;
-                font-size: 9.2pt !important;
+                font-size: 9.4pt !important;
                 line-height: 1.15 !important;
             }
             .report-table .item-label {
                 padding-left: 8px !important;
-                font-size: 9.2pt !important;
+                font-size: 9.4pt !important;
                 font-weight: 500 !important;
                 color: #111827 !important;
             }
             .report-table .currency {
                 padding-right: 5px !important;
-                font-size: 9.2pt !important;
+                font-size: 9.4pt !important;
                 font-weight: 600 !important;
                 color: #111827 !important;
             }
@@ -1235,12 +1241,20 @@
 
                     <div class="report-table-wrapper">
                         <table class="report-table" id="main-entry-table">
+                            <colgroup>
+                                <col class="col-item">
+                                <col class="col-coop-rev">
+                                <col class="col-coop-exp">
+                                <col class="col-dj-rev">
+                                <col class="col-dj-exp">
+                                <col class="col-note">
+                            </colgroup>
                             <thead>
                                 <tr>
-                                    <th class="col-item" style="text-align:left;">รายการ</th>
-                                    <th class="col-coop-rev" colspan="2">สหกรณ์ร้านค้า</th>
-                                    <th class="col-dj-rev" colspan="2">ดั่งใจเบเกอรี่</th>
-                                    <th class="col-note">หมายเหตุ</th>
+                                    <th style="text-align:left;">รายการ</th>
+                                    <th colspan="2">สหกรณ์ร้านค้า</th>
+                                    <th colspan="2">ดั่งใจเบเกอรี่</th>
+                                    <th>หมายเหตุ</th>
                                 </tr>
                                 <tr>
                                     <th></th>
@@ -1680,7 +1694,7 @@ function entryRow(item, group) {
 function debtorRow(name, index) {
     return `<tr class="debtor-row" data-debtor-index="${index}">
         <td class="item-label">
-            <input type="text" class="form-input" value="${name}" style="max-width:180px; height:30px; font-size:0.8rem;"
+            <input type="text" class="form-input" value="${name}" style="max-width:320px; height:30px; font-size:0.85rem;"
                    onchange="updateDebtorName(${index}, this.value)" placeholder="ชื่อลูกหนี้">
         </td>
         <td>${currencyInput(`DEBTOR_${index}_COOP_REV`, 'revenue-field')}</td>
@@ -1769,7 +1783,7 @@ function addDebtorRow(name = '', rev = 0, exp = 0) {
     newRow.dataset.debtorIndex = newIndex;
     newRow.innerHTML = `
         <td class="item-label">
-            <input type="text" class="form-input" value="${name || ''}" style="max-width:180px; height:30px; font-size:0.8rem;"
+            <input type="text" class="form-input" value="${name || ''}" style="max-width:320px; height:30px; font-size:0.85rem;"
                    onchange="updateDebtorName(${newIndex}, this.value)" placeholder="ชื่อลูกหนี้">
         </td>
         <td>${currencyInput(`DEBTOR_${newIndex}_COOP_REV`, 'revenue-field', rev || '')}</td>
@@ -1817,7 +1831,7 @@ function resetDebtorRowsToDefault() {
         newRow.dataset.debtorIndex = i;
         newRow.innerHTML = `
             <td class="item-label">
-                <input type="text" class="form-input" value="${d.name || ''}" style="max-width:180px; height:30px; font-size:0.8rem;"
+                <input type="text" class="form-input" value="${d.name || ''}" style="max-width:320px; height:30px; font-size:0.85rem;"
                        onchange="updateDebtorName(${i}, this.value)" placeholder="ชื่อลูกหนี้">
             </td>
             <td>${currencyInput(`DEBTOR_${i}_COOP_REV`, 'revenue-field')}</td>
@@ -2153,7 +2167,7 @@ async function loadReportForDate(rawDateStr) {
             newRow.dataset.debtorIndex = i;
             newRow.innerHTML = `
                 <td class="item-label">
-                    <input type="text" class="form-input" value="${d.name || ''}" style="max-width:180px; height:30px; font-size:0.8rem;"
+                    <input type="text" class="form-input" value="${d.name || ''}" style="max-width:320px; height:30px; font-size:0.85rem;"
                            onchange="updateDebtorName(${i}, this.value)" placeholder="ชื่อลูกหนี้">
                 </td>
                 <td>${currencyInput(`DEBTOR_${i}_COOP_REV`, 'revenue-field', revVal || '')}</td>
@@ -2214,6 +2228,14 @@ function loadReportView() {
         </div>
         <div class="report-table-wrapper">
             <table class="report-table">
+                <colgroup>
+                    <col class="col-item">
+                    <col class="col-coop-rev">
+                    <col class="col-coop-exp">
+                    <col class="col-dj-rev">
+                    <col class="col-dj-exp">
+                    <col class="col-note">
+                </colgroup>
                 <thead>
                     <tr><th style="text-align:left;">รายการ</th><th colspan="2">สหกรณ์ร้านค้า</th><th colspan="2">ดั่งใจเบเกอรี่</th><th>หมายเหตุ</th></tr>
                     <tr><th></th><th>รายรับ</th><th>รายจ่าย</th><th>รายรับ</th><th>รายจ่าย</th><th></th></tr>
