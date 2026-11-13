@@ -1497,38 +1497,76 @@ function grandTotalRow(id, label) {
     </tr>`;
 }
 
-function currencyInput(id, extraClass) {
-    return `<input type="text" class="form-input input-currency ${extraClass}" id="inp_${id}"
+function currencyInput(id, extraClass, val) {
+    const valAttr = (val !== undefined && val !== null && val !== '' && val !== 0) ? `value="${val}"` : '';
+    return `<input type="text" class="form-input input-currency ${extraClass}" id="inp_${id}" ${valAttr}
             oninput="formatCurrencyInput(this); recalculate();"
             onfocus="this.select();" placeholder="0" autocomplete="off">`;
 }
 
-function addDebtorRow() {
-    const newIndex = currentDebtors.length;
-    currentDebtors.push({ name: '' });
+function reindexDebtorRows() {
+    const rows = document.querySelectorAll('tr.debtor-row');
+    currentDebtors = [];
+    rows.forEach((row, i) => {
+        row.dataset.debtorIndex = i;
+        const nameInput = row.querySelector('input[type="text"]');
+        if (nameInput) {
+            nameInput.setAttribute('onchange', `updateDebtorName(${i}, this.value)`);
+        }
+        const revInp = row.querySelector('.revenue-field');
+        if (revInp) {
+            revInp.id = `inp_DEBTOR_${i}_COOP_REV`;
+        }
+        const expInp = row.querySelector('.expense-field');
+        if (expInp) {
+            expInp.id = `inp_DEBTOR_${i}_COOP_EXP`;
+        }
+        const delBtn = row.querySelector('.btn-remove-debtor');
+        if (delBtn) {
+            delBtn.setAttribute('onclick', `removeDebtorRow(${i})`);
+        }
+        currentDebtors.push({ name: nameInput ? nameInput.value : '' });
+    });
+}
+
+function addDebtorRow(name = '', rev = 0, exp = 0) {
     const endMarker = document.getElementById('debtor-rows-end');
+    if (!endMarker) return;
+    const newIndex = document.querySelectorAll('tr.debtor-row').length;
+    currentDebtors.push({ name: name });
+
     const newRow = document.createElement('tr');
     newRow.className = 'debtor-row';
     newRow.dataset.debtorIndex = newIndex;
     newRow.innerHTML = `
         <td class="item-label">
-            <input type="text" class="form-input" value="" style="max-width:180px; height:30px; font-size:0.8rem;"
+            <input type="text" class="form-input" value="${name || ''}" style="max-width:180px; height:30px; font-size:0.8rem;"
                    onchange="updateDebtorName(${newIndex}, this.value)" placeholder="ชื่อลูกหนี้">
         </td>
-        <td>${currencyInput(`DEBTOR_${newIndex}_COOP_REV`, 'revenue-field')}</td>
-        <td>${currencyInput(`DEBTOR_${newIndex}_COOP_EXP`, 'expense-field')}</td>
+        <td>${currencyInput(`DEBTOR_${newIndex}_COOP_REV`, 'revenue-field', rev || '')}</td>
+        <td>${currencyInput(`DEBTOR_${newIndex}_COOP_EXP`, 'expense-field', exp || '')}</td>
         <td></td>
         <td></td>
         <td class="debtor-row-actions">
             <button class="btn-remove-debtor" onclick="removeDebtorRow(${newIndex})" title="ลบ"><i class="fas fa-minus"></i></button>
         </td>`;
     endMarker.parentNode.insertBefore(newRow, endMarker);
+
+    if (rev) {
+        const inpRev = document.getElementById(`inp_DEBTOR_${newIndex}_COOP_REV`);
+        if (inpRev) inpRev.value = rev;
+    }
+    if (exp) {
+        const inpExp = document.getElementById(`inp_DEBTOR_${newIndex}_COOP_EXP`);
+        if (inpExp) inpExp.value = exp;
+    }
 }
 
 function removeDebtorRow(index) {
     const row = document.querySelector(`tr.debtor-row[data-debtor-index="${index}"]`);
     if (row) {
         row.remove();
+        reindexDebtorRows();
         recalculate();
     }
 }
@@ -1537,6 +1575,31 @@ function updateDebtorName(index, value) {
     if (currentDebtors[index]) {
         currentDebtors[index].name = value;
     }
+}
+
+function resetDebtorRowsToDefault() {
+    document.querySelectorAll('tr.debtor-row').forEach(r => r.remove());
+    currentDebtors = [...categories.defaultDebtors];
+    const endMarker = document.getElementById('debtor-rows-end');
+    if (!endMarker) return;
+    currentDebtors.forEach((d, i) => {
+        const newRow = document.createElement('tr');
+        newRow.className = 'debtor-row';
+        newRow.dataset.debtorIndex = i;
+        newRow.innerHTML = `
+            <td class="item-label">
+                <input type="text" class="form-input" value="${d.name || ''}" style="max-width:180px; height:30px; font-size:0.8rem;"
+                       onchange="updateDebtorName(${i}, this.value)" placeholder="ชื่อลูกหนี้">
+            </td>
+            <td>${currencyInput(`DEBTOR_${i}_COOP_REV`, 'revenue-field')}</td>
+            <td>${currencyInput(`DEBTOR_${i}_COOP_EXP`, 'expense-field')}</td>
+            <td></td>
+            <td></td>
+            <td class="debtor-row-actions">
+                <button class="btn-remove-debtor" onclick="removeDebtorRow(${i})" title="ลบ"><i class="fas fa-minus"></i></button>
+            </td>`;
+        endMarker.parentNode.insertBefore(newRow, endMarker);
+    });
 }
 
 function formatCurrencyInput(el) {
@@ -1702,7 +1765,7 @@ async function saveReport() {
 
     document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => {
         const id = inp.id.replace('inp_', '');
-        const val = parseFloat(inp.value) || 0;
+        const val = parseNum(inp.value) || 0;
         if (val !== 0) {
             report.data[id] = val;
         }
@@ -1711,12 +1774,19 @@ async function saveReport() {
     document.querySelectorAll('tr.debtor-row').forEach(row => {
         const idx = row.dataset.debtorIndex;
         const nameInput = row.querySelector('input[type="text"]');
-        report.debtors.push({
-            name: nameInput ? nameInput.value : '',
-            index: idx,
-            coopRev: getInputValue(`DEBTOR_${idx}_COOP_REV`),
-            coopExp: getInputValue(`DEBTOR_${idx}_COOP_EXP`)
-        });
+        const debName = nameInput ? nameInput.value.trim() : '';
+        const cRev = getInputValue(`DEBTOR_${idx}_COOP_REV`);
+        const cExp = getInputValue(`DEBTOR_${idx}_COOP_EXP`);
+        if (debName || cRev || cExp) {
+            report.debtors.push({
+                name: debName,
+                index: idx,
+                coopRev: cRev,
+                coopExp: cExp
+            });
+            if (cRev) report.data[`DEBTOR_${idx}_COOP_REV`] = cRev;
+            if (cExp) report.data[`DEBTOR_${idx}_COOP_EXP`] = cExp;
+        }
     });
 
     allReports[reportDate] = report;
@@ -1725,20 +1795,30 @@ async function saveReport() {
     if (gasUrl) {
         showToast('กำลังบันทึกลง Google Sheets...', 'info');
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
+
             const res = await fetch(gasUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'saveReport', report: report })
+                body: JSON.stringify({ action: 'saveReport', report: report }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
             const result = await res.json();
             if (result.status === 'success') {
                 if (result.spreadsheetUrl) updateSheetButtons(result.spreadsheetUrl);
                 showToast(`✅ บันทึกลง Google Sheets และ เครื่อง เรียบร้อย (${formatThaiDate(reportDate)})`, 'success');
             } else {
-                showToast('บันทึกลงเครื่องแล้ว แต่วอนคำขอ Google Sheets: ' + result.message, 'error');
+                showToast('⚠️ บันทึกลงเครื่องแล้ว แต่ Google Sheets แจ้งเตือน: ' + result.message, 'error');
             }
         } catch (err) {
-            showToast('บันทึกลงเครื่องเรียบร้อย (ไม่สามารถเชื่อมต่อ Google Sheets ได้)', 'info');
+            console.error('GAS Save Error:', err);
+            const msg = (err && err.name === 'AbortError')
+                ? 'การเชื่อมต่อหมดเวลา (Timeout) บันทึกข้อมูลลงเครื่องแล้ว กรุณากดบันทึกซ้ำเมื่อเน็ตเสถียร'
+                : 'บันทึกลงเครื่องเรียบร้อย (ไม่สามารถเชื่อมต่อ Google Sheets ได้ - กรุณาตรวจสอบอินเทอร์เน็ต)';
+            showToast('⚠️ ' + msg, 'error');
         }
     } else {
         showToast(`บันทึกรายงานลงเครื่องสำเร็จ (${formatThaiDate(reportDate)})`, 'success');
@@ -1752,7 +1832,11 @@ async function syncFromCloud() {
     }
     showToast('กำลังดึงข้อมูลทั้งหมดจาก Cloud...', 'info');
     try {
-        const res = await fetch(`${gasUrl}?action=listReports`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        const res = await fetch(`${gasUrl}?action=listReports`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         const result = await res.json();
         if (result.status === 'success' && Array.isArray(result.data)) {
             let fetchedCount = 0;
@@ -1786,21 +1870,37 @@ async function syncFromCloud() {
 
 async function loadReportForDate(rawDateStr) {
     const dateStr = normalizeDateStr(rawDateStr);
-    if (gasUrl && dateStr) {
+    if (!dateStr) return;
+
+    if (gasUrl) {
         try {
-            const res = await fetch(`${gasUrl}?action=getReport&date=${dateStr}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const res = await fetch(`${gasUrl}?action=getReport&date=${dateStr}`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             const result = await res.json();
             if (result.status === 'success' && result.data) {
                 if (result.spreadsheetUrl) updateSheetButtons(result.spreadsheetUrl);
                 result.data.date = dateStr;
-                allReports[dateStr] = result.data;
-                saveAllReports();
+
+                const localReport = allReports[dateStr];
+                const cloudHasData = (result.data.data && Object.keys(result.data.data).length > 0) ||
+                                     (result.data.debtors && result.data.debtors.length > 0);
+
+                if (cloudHasData || !localReport) {
+                    allReports[dateStr] = result.data;
+                    saveAllReports();
+                }
             }
-        } catch (err) {}
+        } catch (err) {
+            console.warn('Could not fetch from cloud, fallback to local cache:', err);
+        }
     }
 
     const report = allReports[dateStr];
     if (!report) {
+        resetDebtorRowsToDefault();
         document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
         recalculate();
         return;
@@ -1808,35 +1908,50 @@ async function loadReportForDate(rawDateStr) {
 
     document.getElementById('report-status').value = report.status || 'DRAFT';
 
+    // 1. Reset all currency input fields
+    document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
+
+    // 2. Rebuild debtor rows and fill their values
     if (report.debtors && report.debtors.length > 0) {
         document.querySelectorAll('tr.debtor-row').forEach(r => r.remove());
-        currentDebtors = report.debtors.map(d => ({ name: d.name }));
+        currentDebtors = report.debtors.map(d => ({ name: d.name || '' }));
         const endMarker = document.getElementById('debtor-rows-end');
         report.debtors.forEach((d, i) => {
+            const revVal = parseNum(d.coopRev);
+            const expVal = parseNum(d.coopExp);
             const newRow = document.createElement('tr');
             newRow.className = 'debtor-row';
             newRow.dataset.debtorIndex = i;
             newRow.innerHTML = `
                 <td class="item-label">
-                    <input type="text" class="form-input" value="${d.name}" style="max-width:180px; height:30px; font-size:0.8rem;"
+                    <input type="text" class="form-input" value="${d.name || ''}" style="max-width:180px; height:30px; font-size:0.8rem;"
                            onchange="updateDebtorName(${i}, this.value)" placeholder="ชื่อลูกหนี้">
                 </td>
-                <td>${currencyInput(`DEBTOR_${i}_COOP_REV`, 'revenue-field')}</td>
-                <td>${currencyInput(`DEBTOR_${i}_COOP_EXP`, 'expense-field')}</td>
+                <td>${currencyInput(`DEBTOR_${i}_COOP_REV`, 'revenue-field', revVal || '')}</td>
+                <td>${currencyInput(`DEBTOR_${i}_COOP_EXP`, 'expense-field', expVal || '')}</td>
                 <td></td>
                 <td></td>
                 <td class="debtor-row-actions">
                     <button class="btn-remove-debtor" onclick="removeDebtorRow(${i})" title="ลบ"><i class="fas fa-minus"></i></button>
                 </td>`;
             endMarker.parentNode.insertBefore(newRow, endMarker);
+
+            // Double ensure values are populated in input elements
+            const inpRev = document.getElementById(`inp_DEBTOR_${i}_COOP_REV`);
+            if (inpRev && revVal !== 0) inpRev.value = revVal;
+            const inpExp = document.getElementById(`inp_DEBTOR_${i}_COOP_EXP`);
+            if (inpExp && expVal !== 0) inpExp.value = expVal;
         });
+    } else {
+        resetDebtorRowsToDefault();
     }
 
-    document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
+    // 3. Populate standard items from report.data
     if (report.data) {
         Object.entries(report.data).forEach(([key, val]) => {
             const el = document.getElementById('inp_' + key);
-            if (el && val !== 0) { el.value = val; }
+            const num = parseNum(val);
+            if (el && num !== 0) { el.value = num; }
         });
     }
 
@@ -1928,11 +2043,13 @@ function loadReportView() {
     if (report.debtors && report.debtors.length > 0) {
         html += sectionHeaderRow('ลูกหนี้ ขายเชื่อ (รายได้)', 'revenue-section', 'fa-user-tag');
         report.debtors.forEach(deb => {
-            sDebtRev += deb.coopRev || 0;
-            sDebtExp += deb.coopExp || 0;
+            const cr = parseNum(deb.coopRev);
+            const ce = parseNum(deb.coopExp);
+            sDebtRev += cr;
+            sDebtExp += ce;
             html += `<tr><td class="item-label">${deb.name || '—'}</td>
-                     <td class="currency">${deb.coopRev ? formatNumber(deb.coopRev) : ''}</td>
-                     <td class="currency">${deb.coopExp ? formatNumber(deb.coopExp) : ''}</td>
+                     <td class="currency">${cr ? formatNumber(cr) : ''}</td>
+                     <td class="currency">${ce ? formatNumber(ce) : ''}</td>
                      <td></td><td></td><td></td></tr>`;
         });
         html += `<tr class="subtotal-row"><td class="item-label" style="font-weight:700;">รวม</td>
@@ -2041,7 +2158,7 @@ function renderDashboard() {
             dayPayable += (d[`${item.id}_COOP_EXP`] || 0);
         });
         if (r.debtors && r.debtors.length > 0) {
-            r.debtors.forEach(deb => { dayDebtor += deb.coopRev || 0; });
+            r.debtors.forEach(deb => { dayDebtor += parseNum(deb.coopRev); });
         }
 
         const dayExp = dayOpex + dayCogs + dayPayable;
@@ -2160,7 +2277,7 @@ function renderDashboard() {
             djTotal += (d[`${item.id}_DJ_REV`] || 0);
         });
         if (allReports[date].debtors) {
-            allReports[date].debtors.forEach(deb => { coopTotal += deb.coopRev || 0; });
+            allReports[date].debtors.forEach(deb => { coopTotal += parseNum(deb.coopRev); });
         }
     });
     const ctx3 = document.getElementById('chart-unit-compare').getContext('2d');
@@ -2438,33 +2555,6 @@ async function testGasConnection() {
     }
 }
 
-async function syncFromCloud() {
-    if (!gasUrl) return;
-    try {
-        const res = await fetch(`${gasUrl}?action=listReports`);
-        const result = await res.json();
-        if (result.status === 'success' && Array.isArray(result.data)) {
-            if (result.spreadsheetUrl) {
-                updateSheetButtons(result.spreadsheetUrl);
-            }
-            for (const item of result.data) {
-                const normDate = normalizeDateStr(item.date);
-                if (!normDate) continue;
-                const detailRes = await fetch(`${gasUrl}?action=getReport&date=${normDate}`);
-                const detailData = await detailRes.json();
-                if (detailData.status === 'success' && detailData.data) {
-                    detailData.data.date = normDate;
-                    allReports[normDate] = detailData.data;
-                }
-            }
-            saveAllReports();
-            showToast(`ซิงค์ข้อมูลจาก Google Sheets เรียบร้อย (${result.data.length} รายการ)`, 'success');
-        }
-    } catch (err) {
-        console.warn('Sync error:', err);
-    }
-}
-
 function updateCloudStatusBadge() {
     const badge = document.getElementById('sidebar-cloud-status');
     if (gasUrl) {
@@ -2581,6 +2671,7 @@ function resetToDefaults() {
 function clearForm() {
     if (confirm('ต้องการล้างข้อมูลทั้งหมดในฟอร์มหรือไม่?')) {
         document.querySelectorAll('#main-entry-table .form-input.input-currency').forEach(inp => { inp.value = ''; });
+        resetDebtorRowsToDefault();
         recalculate();
         showToast('ล้างข้อมูลฟอร์มเรียบร้อย', 'info');
     }

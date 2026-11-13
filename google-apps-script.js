@@ -327,8 +327,11 @@ function saveReport(report) {
   var debtorRows = [];
 
   debtors.forEach(function(d) {
-    if (d.name || d.coopRev || d.coopExp) {
-      debtorRows.push([date, d.name || "", d.coopRev || 0, d.coopExp || 0]);
+    var dName = d.name ? String(d.name).trim() : "";
+    var cRev = parseNum(d.coopRev);
+    var cExp = parseNum(d.coopExp);
+    if (dName || cRev || cExp) {
+      debtorRows.push([date, dName, cRev, cExp]);
     }
   });
   if (debtorRows.length > 0) {
@@ -430,11 +433,17 @@ function getReportByDate(targetDateStr) {
       var d = normalizeDateStr(debtorData[i][0]);
       if (d === date) {
         foundAny = true;
+        var debName = String(debtorData[i][1]).trim();
+        var coopRev = parseNum(debtorData[i][2]);
+        var coopExp = parseNum(debtorData[i][3]);
+        var debtorIdx = report.debtors.length;
         report.debtors.push({
-          name: String(debtorData[i][1]).trim(),
-          coopRev: Number(debtorData[i][2]) || 0,
-          coopExp: Number(debtorData[i][3]) || 0
+          name: debName,
+          coopRev: coopRev,
+          coopExp: coopExp
         });
+        report.data["DEBTOR_" + debtorIdx + "_COOP_REV"] = coopRev;
+        report.data["DEBTOR_" + debtorIdx + "_COOP_EXP"] = coopExp;
       }
     }
   }
@@ -541,11 +550,21 @@ function queryReports(from, to, unit) {
     var group = linesData[i][2];
 
     if (group === "revenue") {
-      datesInRange[date].coopRev += Number(linesData[i][3]) || 0;
-      datesInRange[date].djRev   += Number(linesData[i][5]) || 0;
+      datesInRange[date].coopRev += parseNum(linesData[i][3]);
+      datesInRange[date].djRev   += parseNum(linesData[i][5]);
     } else {
-      datesInRange[date].coopExp += Number(linesData[i][4]) || 0;
-      datesInRange[date].djExp   += Number(linesData[i][6]) || 0;
+      datesInRange[date].coopExp += parseNum(linesData[i][4]);
+      datesInRange[date].djExp   += parseNum(linesData[i][6]);
+    }
+  }
+
+  var debtorSheet = ss.getSheetByName(SHEET_DEBTORS);
+  if (debtorSheet) {
+    var debtorData = debtorSheet.getDataRange().getValues();
+    for (var i = 1; i < debtorData.length; i++) {
+      var d = normalizeDateStr(debtorData[i][0]);
+      if (!datesInRange[d]) continue;
+      datesInRange[d].coopRev += parseNum(debtorData[i][2]);
     }
   }
 
