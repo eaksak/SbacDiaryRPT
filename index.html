@@ -829,78 +829,117 @@
             .page-content { padding: var(--space-md); }
         }
 
+        /* PREPARING PRINT: Unlocks scroll constraints in DOM before print preview */
+        body.preparing-print,
+        body.preparing-print .app-container,
+        body.preparing-print .main-content,
+        body.preparing-print .page-content,
+        body.preparing-print .card,
+        body.preparing-print .report-table-wrapper {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
         /* PRINT STYLES — Optimized for crisp 1-page A4 print */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 7mm 8mm 6mm 8mm;
+                margin: 5mm 7mm 5mm 7mm;
             }
             body, html {
                 background: white !important;
                 color: #111827 !important;
-                font-size: 10.5pt !important;
-                line-height: 1.25 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                font-size: 9.3pt !important;
+                line-height: 1.15 !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             body::before { display: none !important; }
+
+            /* Hide UI elements */
             .sidebar, .top-bar, .no-print, .toast-container, .stats-grid,
-            .btn-remove-debtor, .btn-add-debtor, #debtor-rows-end {
+            .btn-remove-debtor, .btn-add-debtor, #debtor-rows-end, #print-report-header {
                 display: none !important;
             }
-            .main-content { margin-left: 0 !important; }
-            .page-content { padding: 0 !important; }
-            .card {
-                border: none !important;
+
+            /* Completely unlock all containers to prevent clipping and page breaks */
+            .app-container, .main-content, .page-content, .card,
+            #report-view-content, .tab-panel.active {
+                display: block !important;
+                position: static !important;
+                float: none !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                overflow-x: visible !important;
+                overflow-y: visible !important;
+                margin: 0 !important;
                 padding: 0 !important;
+                border: none !important;
                 box-shadow: none !important;
                 background: transparent !important;
             }
+
             .tab-panel { display: none !important; }
             .tab-panel.active { display: block !important; }
 
             /* Header */
             .diary-report-header {
+                display: block !important;
                 text-align: center !important;
-                margin-bottom: 6px !important;
-                padding-bottom: 4px !important;
+                margin: 0 0 3px 0 !important;
+                padding: 0 0 2px 0 !important;
                 border-bottom: 1.5px solid #374151 !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
             }
             .diary-report-header h2 {
                 color: #111827 !important;
-                font-size: 14pt !important;
+                font-size: 13pt !important;
                 font-weight: 700 !important;
                 margin: 0 !important;
-                line-height: 1.2 !important;
+                line-height: 1.15 !important;
             }
             .diary-report-header h3 {
                 color: #374151 !important;
-                font-size: 11.5pt !important;
+                font-size: 10pt !important;
                 font-weight: 600 !important;
-                margin: 2px 0 0 0 !important;
-                line-height: 1.2 !important;
+                margin: 1px 0 0 0 !important;
+                line-height: 1.15 !important;
             }
             .diary-report-header .report-date-display {
                 color: #1f2937 !important;
-                font-size: 11pt !important;
+                font-size: 9.5pt !important;
                 font-weight: 600 !important;
-                margin: 2px 0 0 0 !important;
-                line-height: 1.2 !important;
+                margin: 1px 0 0 0 !important;
+                line-height: 1.15 !important;
             }
 
             /* Report Table Wrapper & Table */
             .report-table-wrapper {
-                border: 1.5px solid #4b5563 !important;
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                border: 1.5px solid #374151 !important;
                 border-radius: 0 !important;
                 background: white !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .report-table {
                 width: 100% !important;
                 border-collapse: collapse !important;
-                font-size: 10.5pt !important;
+                font-size: 9.2pt !important;
                 table-layout: fixed !important;
+                margin: 0 !important;
             }
             .report-table tr {
                 page-break-inside: avoid !important;
@@ -909,52 +948,48 @@
             .report-table th {
                 background: #f3f4f6 !important;
                 color: #111827 !important;
-                font-size: 10pt !important;
+                font-size: 9pt !important;
                 font-weight: 700 !important;
-                padding: 3px 4px !important;
+                padding: 2px 3px !important;
                 border: 1px solid #9ca3af !important;
-                border-bottom: 1.5px solid #4b5563 !important;
+                border-bottom: 1.5px solid #374151 !important;
                 text-align: center !important;
-                line-height: 1.2 !important;
+                line-height: 1.15 !important;
             }
             .report-table td {
-                padding: 2.2px 5px !important;
+                padding: 1.8px 4px !important;
                 border: 1px solid #d1d5db !important;
                 color: #111827 !important;
-                font-size: 10.5pt !important;
-                line-height: 1.25 !important;
+                font-size: 9.2pt !important;
+                line-height: 1.15 !important;
             }
             .report-table .item-label {
-                padding-left: 10px !important;
-                font-size: 10.5pt !important;
+                padding-left: 8px !important;
+                font-size: 9.2pt !important;
                 font-weight: 500 !important;
                 color: #111827 !important;
             }
             .report-table .currency {
-                padding-right: 6px !important;
-                font-size: 10.5pt !important;
+                padding-right: 5px !important;
+                font-size: 9.2pt !important;
                 font-weight: 600 !important;
                 color: #111827 !important;
             }
-            .report-table .currency.positive {
-                color: #15803d !important;
-            }
-            .report-table .currency.negative {
-                color: #b91c1c !important;
-            }
+            .report-table .currency.positive { color: #15803d !important; }
+            .report-table .currency.negative { color: #b91c1c !important; }
             .report-table .source-note {
-                font-size: 8.5pt !important;
+                font-size: 7.5pt !important;
                 color: #4b5563 !important;
-                padding: 2px 4px !important;
+                padding: 1px 3px !important;
             }
 
             /* Section Headers */
             .report-table .section-header td {
                 background: #e5e7eb !important;
                 color: #111827 !important;
-                font-size: 10.5pt !important;
+                font-size: 9.2pt !important;
                 font-weight: 700 !important;
-                padding: 3px 6px !important;
+                padding: 2.2px 5px !important;
                 border-top: 1.5px solid #6b7280 !important;
                 border-bottom: 1.5px solid #6b7280 !important;
             }
@@ -977,17 +1012,17 @@
             /* Subtotals & Grand Totals */
             .report-table .subtotal-row td {
                 background: #f9fafb !important;
-                font-size: 10.5pt !important;
+                font-size: 9.2pt !important;
                 font-weight: 700 !important;
-                padding: 2.5px 5px !important;
+                padding: 2px 4px !important;
                 border-top: 1.5px solid #9ca3af !important;
                 border-bottom: 1.5px solid #9ca3af !important;
             }
             .report-table .grand-total-row td {
                 background: #f3f4f6 !important;
-                font-size: 11pt !important;
+                font-size: 9.5pt !important;
                 font-weight: 800 !important;
-                padding: 3px 5px !important;
+                padding: 2.5px 4px !important;
                 border-top: 2px double #4b5563 !important;
                 border-bottom: 2px double #4b5563 !important;
             }
@@ -996,25 +1031,21 @@
                 border-top: 2.5px double #16a34a !important;
                 border-bottom: 2.5px double #16a34a !important;
                 color: #14532d !important;
-                font-size: 11.5pt !important;
+                font-size: 10pt !important;
                 font-weight: 800 !important;
-                padding: 3.5px 6px !important;
+                padding: 3px 5px !important;
             }
 
             .form-input {
                 border: none !important;
                 background: transparent !important;
                 box-shadow: none !important;
-                font-size: 10.5pt !important;
+                font-size: 9.2pt !important;
                 font-weight: 600 !important;
                 padding: 0 !important;
                 height: auto !important;
                 text-align: right !important;
                 color: #111827 !important;
-            }
-            .debtor-row .form-input[type="text"] {
-                text-align: left !important;
-                font-weight: 500 !important;
             }
 
             /* Signatures */
@@ -1022,31 +1053,31 @@
                 display: flex !important;
                 justify-content: center !important;
                 gap: 60px !important;
-                margin-top: 10px !important;
-                padding-top: 5px !important;
+                margin-top: 6px !important;
+                padding-top: 3px !important;
                 border-top: 1px solid #d1d5db !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
             .signature-block {
-                min-width: 180px !important;
+                min-width: 160px !important;
                 text-align: center !important;
             }
             .signature-line {
-                width: 180px !important;
+                width: 160px !important;
                 border-bottom: 1px dotted #4b5563 !important;
-                margin: 0 auto 3px !important;
-                height: 24px !important;
+                margin: 0 auto 2px !important;
+                height: 18px !important;
             }
             .signature-label {
-                font-size: 10pt !important;
+                font-size: 9pt !important;
                 color: #374151 !important;
                 font-weight: 600 !important;
             }
             .signature-date {
-                font-size: 9pt !important;
+                font-size: 8pt !important;
                 color: #4b5563 !important;
-                margin-top: 2px !important;
+                margin-top: 1px !important;
             }
         }
     </style>
@@ -2875,6 +2906,16 @@ function clearForm() {
     }
 }
 
+function prepareAndPrint() {
+    document.body.classList.add('preparing-print');
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+            document.body.classList.remove('preparing-print');
+        }, 800);
+    }, 150);
+}
+
 function exportPDF() {
     const rawDate = document.getElementById('report-date').value || document.getElementById('view-report-date').value;
     const dateStr = normalizeDateStr(rawDate);
@@ -2883,9 +2924,7 @@ function exportPDF() {
         loadReportView();
     }
     switchTab('tab-report', document.querySelector('.nav-item[data-tab="tab-report"]'));
-    setTimeout(() => {
-        window.print();
-    }, 200);
+    prepareAndPrint();
 }
 
 function printReport() {
@@ -2896,7 +2935,7 @@ function printReport() {
         loadReportView();
     }
     switchTab('tab-report', document.querySelector('.nav-item[data-tab="tab-report"]'));
-    setTimeout(() => window.print(), 200);
+    prepareAndPrint();
 }
 
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
