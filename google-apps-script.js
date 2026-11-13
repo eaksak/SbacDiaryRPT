@@ -25,12 +25,12 @@
 // ================================================================
 // SHEET NAMES
 // ================================================================
-var SHEET_DAILY_REPORTS    = "DailyReports";
-var SHEET_REPORT_LINES     = "ReportLines";
-var SHEET_DEBTORS          = "Debtors";
+var SHEET_DAILY_REPORTS = "DailyReports";
+var SHEET_REPORT_LINES = "ReportLines";
+var SHEET_DEBTORS = "Debtors";
 var SHEET_PAYMENT_CHANNELS = "PaymentChannels";
-var SHEET_CONFIG           = "Config";
-var SHEET_SILOM_SYNC_LOG   = "SilomSyncLog";
+var SHEET_CONFIG = "Config";
+var SHEET_SILOM_SYNC_LOG = "SilomSyncLog";
 
 var MINIMART_API_URL_PROPERTY = "MINIMART_API_URL";
 var SILOM_DAILY_SYNC_HOUR = 19;
@@ -52,7 +52,7 @@ function normalizeDateStr(val) {
     if (isNaN(val.getTime())) return "";
     var yyyy = val.getFullYear();
     var mm = String(val.getMonth() + 1); if (mm.length < 2) mm = "0" + mm;
-    var dd = String(val.getDate());       if (dd.length < 2) dd = "0" + dd;
+    var dd = String(val.getDate()); if (dd.length < 2) dd = "0" + dd;
     return yyyy + "-" + mm + "-" + dd;
   }
 
@@ -77,7 +77,7 @@ function normalizeDateStr(val) {
   if (!isNaN(parsed.getTime())) {
     var yyyy = parsed.getFullYear();
     var mm = String(parsed.getMonth() + 1); if (mm.length < 2) mm = "0" + mm;
-    var dd = String(parsed.getDate());       if (dd.length < 2) dd = "0" + dd;
+    var dd = String(parsed.getDate()); if (dd.length < 2) dd = "0" + dd;
     return yyyy + "-" + mm + "-" + dd;
   }
 
@@ -101,11 +101,11 @@ function doGet(e) {
 
     switch (action) {
       case "ping":
-        response = { 
-          status: "success", 
-          message: "บธว. Diary API is ready.", 
+        response = {
+          status: "success",
+          message: "บธว. Diary API is ready.",
           spreadsheetUrl: ssUrl,
-          timestamp: new Date().toISOString() 
+          timestamp: new Date().toISOString()
         };
         break;
 
@@ -121,7 +121,7 @@ function doGet(e) {
 
       case "queryReports":
         var from = normalizeDateStr(e.parameter.from || "");
-        var to   = normalizeDateStr(e.parameter.to   || "");
+        var to = normalizeDateStr(e.parameter.to || "");
         var unit = e.parameter.unit || "ALL";
         response = { status: "success", data: queryReports(from, to, unit), spreadsheetUrl: ssUrl };
         break;
@@ -274,7 +274,7 @@ function saveReport(report) {
   var lineItems = {};
   var paymentItems = {};
 
-  Object.keys(data).forEach(function(key) {
+  Object.keys(data).forEach(function (key) {
     var val = data[key];
     if (val === 0 || val === "" || val === null) return;
 
@@ -299,10 +299,10 @@ function saveReport(report) {
           if (!lineItems[itemId]) lineItems[itemId] = { coopRev: 0, coopExp: 0, djRev: 0, djExp: 0, group: "" };
           if (suffix === "_COOP_REV") lineItems[itemId].coopRev = val;
           else if (suffix === "_COOP_EXP") lineItems[itemId].coopExp = val;
-          else if (suffix === "_DJ_REV")   lineItems[itemId].djRev = val;
-          else if (suffix === "_DJ_EXP")   lineItems[itemId].djExp = val;
+          else if (suffix === "_DJ_REV") lineItems[itemId].djRev = val;
+          else if (suffix === "_DJ_EXP") lineItems[itemId].djExp = val;
 
-          if (itemId.indexOf("REV_") === 0)     lineItems[itemId].group = "revenue";
+          if (itemId.indexOf("REV_") === 0) lineItems[itemId].group = "revenue";
           else if (itemId.indexOf("EXP_") === 0) lineItems[itemId].group = "opex";
           else if (itemId.indexOf("COGS_") === 0) lineItems[itemId].group = "cogs";
           else if (itemId.indexOf("PAYABLE_") === 0) lineItems[itemId].group = "payable";
@@ -313,7 +313,7 @@ function saveReport(report) {
   });
 
   var lineRows = [];
-  Object.keys(lineItems).forEach(function(itemId) {
+  Object.keys(lineItems).forEach(function (itemId) {
     var item = lineItems[itemId];
     lineRows.push([date, itemId, item.group, item.coopRev, item.coopExp, item.djRev, item.djExp, ""]);
   });
@@ -326,7 +326,7 @@ function saveReport(report) {
   var debtors = report.debtors || [];
   var debtorRows = [];
 
-  debtors.forEach(function(d) {
+  debtors.forEach(function (d) {
     var dName = d.name ? String(d.name).trim() : "";
     var cRev = parseNum(d.coopRev);
     var cExp = parseNum(d.coopExp);
@@ -342,7 +342,7 @@ function saveReport(report) {
   var paySheet = ss.getSheetByName(SHEET_PAYMENT_CHANNELS);
   var payRows = [];
 
-  Object.keys(paymentItems).forEach(function(channelId) {
+  Object.keys(paymentItems).forEach(function (channelId) {
     var ch = paymentItems[channelId];
     if (ch.coopAmount || ch.djAmount) {
       payRows.push([date, channelId, ch.coopAmount, ch.djAmount]);
@@ -400,8 +400,8 @@ function getReportByDate(targetDateStr) {
         var group = String(linesData[i][2]).trim();
         var coopRev = parseNum(linesData[i][3]);
         var coopExp = parseNum(linesData[i][4]);
-        var djRev   = parseNum(linesData[i][5]);
-        var djExp   = parseNum(linesData[i][6]);
+        var djRev = parseNum(linesData[i][5]);
+        var djExp = parseNum(linesData[i][6]);
 
         if (group === "revenue") {
           var keyCoop = itemId + "_COOP_REV";
@@ -457,9 +457,9 @@ function getReportByDate(targetDateStr) {
         foundAny = true;
         var channelId = String(payData[i][1]).trim();
         var coopAmt = Number(payData[i][2]) || 0;
-        var djAmt   = Number(payData[i][3]) || 0;
+        var djAmt = Number(payData[i][3]) || 0;
         if (coopAmt) report.data[channelId + "_COOP"] = coopAmt;
-        if (djAmt)   report.data[channelId + "_DJ"] = djAmt;
+        if (djAmt) report.data[channelId + "_DJ"] = djAmt;
       }
     }
   }
@@ -508,10 +508,10 @@ function listAllReports() {
   }
 
   var reports = [];
-  Object.keys(reportsMap).forEach(function(d) {
+  Object.keys(reportsMap).forEach(function (d) {
     reports.push(reportsMap[d]);
   });
-  reports.sort(function(a, b) { return b.date.localeCompare(a.date); });
+  reports.sort(function (a, b) { return b.date.localeCompare(a.date); });
   return reports;
 }
 
@@ -522,7 +522,7 @@ function listAllReports() {
 function queryReports(from, to, unit) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var normFrom = normalizeDateStr(from);
-  var normTo   = normalizeDateStr(to);
+  var normTo = normalizeDateStr(to);
 
   var headerSheet = ss.getSheetByName(SHEET_DAILY_REPORTS);
   var headerData = headerSheet.getDataRange().getValues();
@@ -532,7 +532,7 @@ function queryReports(from, to, unit) {
     var date = normalizeDateStr(headerData[i][0]);
     if (!date) continue;
     if (normFrom && date < normFrom) continue;
-    if (normTo   && date > normTo) continue;
+    if (normTo && date > normTo) continue;
     datesInRange[date] = {
       date: date,
       status: headerData[i][1] || "DRAFT",
@@ -551,10 +551,10 @@ function queryReports(from, to, unit) {
 
     if (group === "revenue") {
       datesInRange[date].coopRev += parseNum(linesData[i][3]);
-      datesInRange[date].djRev   += parseNum(linesData[i][5]);
+      datesInRange[date].djRev += parseNum(linesData[i][5]);
     } else {
       datesInRange[date].coopExp += parseNum(linesData[i][4]);
-      datesInRange[date].djExp   += parseNum(linesData[i][6]);
+      datesInRange[date].djExp += parseNum(linesData[i][6]);
     }
   }
 
@@ -568,8 +568,8 @@ function queryReports(from, to, unit) {
     }
   }
 
-  var results = Object.keys(datesInRange).map(function(d) { return datesInRange[d]; });
-  results.sort(function(a, b) { return a.date.localeCompare(b.date); });
+  var results = Object.keys(datesInRange).map(function (d) { return datesInRange[d]; });
+  results.sort(function (a, b) { return a.date.localeCompare(b.date); });
   return results;
 }
 
@@ -786,7 +786,7 @@ function syncSilomRevenueForDate(rawDate) {
     var sourceData = payload.data || {};
     var revenueData = {};
 
-    requiredKeys.forEach(function(key) {
+    requiredKeys.forEach(function (key) {
       if (!Object.prototype.hasOwnProperty.call(sourceData, key)) {
         throw new Error("Minimart summary is missing " + key);
       }
@@ -862,7 +862,7 @@ function removeSilomDailySyncTriggersFromMenu() {
 
 function removeSilomDailySyncTriggers_() {
   var removed = 0;
-  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
     if (trigger.getHandlerFunction() === "syncTodaySilomRevenue") {
       ScriptApp.deleteTrigger(trigger);
       removed++;
@@ -920,11 +920,11 @@ function importSilomRevenue(rawDate, revenueData) {
 
   var silomItems = ["REV_COOP_SALES", "REV_CANTEEN_RICE", "REV_BAKERY_CONSIGN", "REV_CONSIGNMENT", "REV_UNIFORM"];
 
-  silomItems.forEach(function(itemId) {
+  silomItems.forEach(function (itemId) {
     var coopRevVal = parseNum(revenueData[itemId]);
 
     if (itemRowIndices[itemId] && itemRowIndices[itemId].length > 0) {
-      itemRowIndices[itemId].forEach(function(rowIndex) {
+      itemRowIndices[itemId].forEach(function (rowIndex) {
         linesSheet.getRange(rowIndex, 4).setValue(coopRevVal);
         linesSheet.getRange(rowIndex, 8).setValue("Silom POS Auto-Import");
       });
@@ -960,7 +960,7 @@ function debugInspectSheetDates() {
       var rawCell = linesData[i][0];
       var norm = normalizeDateStr(rawCell);
       if (norm.indexOf("2026-08") !== -1) {
-        Logger.log("Row " + (i+1) + " | Date: '" + norm + "' | Item: " + linesData[i][1] + " | CoopRev: " + linesData[i][3]);
+        Logger.log("Row " + (i + 1) + " | Date: '" + norm + "' | Item: " + linesData[i][1] + " | CoopRev: " + linesData[i][3]);
       }
     }
   } else {
